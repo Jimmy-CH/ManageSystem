@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from accounts.models import UserProfile
+from accounts.models import UserProfile, UserRole
 
 
 # 自定义 Token 返回（含用户和 profile 信息）
@@ -27,7 +27,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'address': profile.address if profile else None,
                 'phone': profile.phone if profile else None,
                 'bio': profile.bio if profile else None,
-            } if profile else None
+            } if profile else None,
+            'roles': list(UserRole.objects.filter(user=self.user).values_list('role__name', flat=True))
         }
         return data
 
@@ -83,7 +84,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username')
     email = serializers.EmailField(source='user.email')
+    roles = serializers.SerializerMethodField()
+
+    def get_roles(self, obj):
+        return list(UserRole.objects.filter(user=obj.user).values_list('role__name', flat=True))
 
     class Meta:
         model = UserProfile
-        fields = ('username', 'email', 'avatar', 'address', 'phone', 'bio')
+        fields = ('username', 'email', 'avatar', 'address', 'phone', 'bio', 'roles')
