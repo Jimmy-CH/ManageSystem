@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     'rest_framework',  # DRF
     'rest_framework_simplejwt',  # JWT
     'accounts',
+    'rest_framework_simplejwt.token_blacklist',  # 启用黑名单
 ]
 
 # DRF
@@ -138,7 +139,7 @@ MEDIA_ROOT = BASE_DIR / 'media'  # 例如：项目根目录下的 media/ 文件�
 
 # JWT 配置（可选自定义）
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # 访问 Token 有效期
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*24),  # 访问 Token 有效期
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # 刷新 Token 有效期
     'ROTATE_REFRESH_TOKENS': True,                   # 是否轮换刷新 Token
     'BLACKLIST_AFTER_ROTATION': True,                # 刷新后旧 Token 是否加入黑名单

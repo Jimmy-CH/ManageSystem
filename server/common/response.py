@@ -1,38 +1,29 @@
-
-from rest_framework.response import Response as DRFResponse
-from . import status as custom_status   # 上面定义的 status
-from rest_framework import status as http_status   # DRF HTTP status
+# utils/response.py
+from django.http import JsonResponse
 
 
-class APIResponse(DRFResponse):
+def custom_response(data=None, code=200, message="成功", success=True, status=None, **kwargs):
     """
-    统一的 API 响应封装
-    格式: { "code": 0, "msg": "success", "data": {} }
+    自定义 JSON 响应封装
+    :param data: 返回的数据（字典或列表）
+    :param code: 业务状态码（自定义）
+    :param message: 提示信息
+    :param success: 是否成功
+    :param status: HTTP 状态码（如 200, 400, 500），默认与 code 相同
+    :param kwargs: 其他额外字段
+    :return: JsonResponse
     """
+    response_data = {
+        "code": code,
+        "message": message,
+        "success": success,
+        "data": data,
+    }
 
-    def __init__(
-        self,
-        data=None,
-        code=custom_status.CustomStatus.SUCCESS,
-        msg=None,
-        status=http_status.HTTP_200_OK,
-        headers=None,
-        **kwargs
-    ):
-        """
-        :param data: 响应数据
-        :param code: 业务状态码
-        :param msg: 业务消息（若为空则根据 code 自动获取）
-        :param status: HTTP 状态码
-        :param headers: 响应头
-        """
-        msg = msg or custom_status.CustomStatus.get_msg(code)
+    # 添加其他自定义字段
+    response_data.update(kwargs)
 
-        # 构造统一响应体
-        response_data = {
-            "code": code,
-            "msg": msg,
-            "data": data,
-        }
+    # 默认 HTTP 状态码
+    http_status = status if status is not None else code
 
-        super().__init__(data=response_data, status=status, headers=headers, **kwargs)
+    return JsonResponse(response_data, status=http_status, json_dumps_params={'ensure_ascii': False})

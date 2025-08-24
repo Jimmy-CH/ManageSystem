@@ -6,18 +6,22 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from accounts.views import (UserRegistrationView, MyTokenObtainPairView, MyTokenRefreshView,
-                            UserProfileView, RoleViewSet, UserRoleViewSet, CustomPermissionViewSet)
+from accounts.views import (UserRegistrationView, MyTokenObtainPairView, MyTokenRefreshView, UserViewSet,
+                            UserProfileView, RoleViewSet, UserRoleViewSet, CustomPermissionViewSet, logout_view)
 
 router = DefaultRouter()
 router.register(r'permissions', CustomPermissionViewSet)
 router.register(r'roles', RoleViewSet)
 router.register(r'user-roles', UserRoleViewSet)
+router.register(r'user-profile', UserViewSet)
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user_register'),
-    path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/', MyTokenObtainPairView.as_view(), name='login'),
     path('token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
     path('user/', UserProfileView.as_view(), name='user_profile'),
+    path('logout/', logout_view, name='logout'),
+
+
     path('', include(router.urls)),
 ]
