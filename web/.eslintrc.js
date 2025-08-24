@@ -9,7 +9,11 @@ module.exports = {
     node: true,
     es6: true,
   },
-  extends: ['plugin:vue/recommended', 'eslint:recommended'],
+  extends: [
+    'plugin:vue/recommended', 
+    'eslint:recommended',
+    'plugin:prettier/recommended' 
+  ],
 
   // add your custom rules here
   //it is base on https://github.com/vuejs/eslint-config-vue
