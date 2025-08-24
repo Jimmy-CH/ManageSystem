@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     'rest_framework',  # DRF
     'rest_framework_simplejwt',  # JWT
     'accounts',
+    'rest_framework_simplejwt.token_blacklist',  # 启用黑名单
 ]
 
 # DRF
