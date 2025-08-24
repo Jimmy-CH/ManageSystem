@@ -7,3 +7,24 @@ export function getList(params) {
     params
   })
 }
+
+export function getUserList() {
+  return request({
+    url: '/accounts/user-profile/',
+    method: 'get'
+  })
+}
+
+export function getPermissionList() {
+  return request({
+    url: '/accounts/permissions/',
+    method: 'get'
+  })
+}
+
+export function getRoleList() {
+  return request({
+    url: '/accounts/roles/',
+    method: 'get'
+  })
+}
