@@ -8,7 +8,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 class UnifiedResponseMiddleware(MiddlewareMixin):
     """
     统一响应格式中间件
-    格式: {"code": 0, "message": "success", "data": {...}}
+    格式: {"code": 200, "message": "success", "data": {...}}
     """
 
     def process_response(self, request, response):
@@ -53,7 +53,7 @@ class UnifiedResponseMiddleware(MiddlewareMixin):
     def _create_success_response(self, data=None):
         """创建成功响应"""
         response_data = {
-            'code': 0,
+            'code': 200,
             'message': 'success',
             'data': data or {}
         }

@@ -1,12 +1,13 @@
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from accounts.models import UserProfile
 from accounts.serializers import MyTokenObtainPairSerializer, UserRegistrationSerializer, UserProfileSerializer
 from common import custom_response
 
@@ -42,7 +43,7 @@ class UserRegistrationView(APIView):
                     }
                 }
             }, status=status.HTTP_201_CREATED)
-        return custom_response(msg=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return custom_response(message=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # 获取用户信息
@@ -52,7 +53,7 @@ class UserProfileView(APIView):
     def get(self, request):
         profile = request.user.profile  # 通过 OneToOne 获取
         serializer = UserProfileSerializer(profile)
-        return Response(serializer.data)
+        return custom_response(data=serializer.data)
 
     # 可选：支持更新用户信息（PUT/PATCH）
     def put(self, request):
@@ -60,8 +61,8 @@ class UserProfileView(APIView):
         serializer = UserProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data=serializer.data)
+        return custom_response(message=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -113,4 +114,11 @@ def logout_view(request):
             message='服务器内部错误',
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all().order_by('-id')
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+
 

@@ -4,12 +4,14 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.conf import settings
 
+from common import BaseModel
+
 
 def upload_to(instance, filename):
     return 'avatars/{filename}'.format(filename=filename)
 
 
-class UserProfile(models.Model):
+class UserProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = models.ImageField(upload_to=upload_to, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)

@@ -6,13 +6,14 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from accounts.views import (UserRegistrationView, MyTokenObtainPairView, MyTokenRefreshView,
+from accounts.views import (UserRegistrationView, MyTokenObtainPairView, MyTokenRefreshView, UserViewSet,
                             UserProfileView, RoleViewSet, UserRoleViewSet, CustomPermissionViewSet, logout_view)
 
 router = DefaultRouter()
 router.register(r'permissions', CustomPermissionViewSet)
 router.register(r'roles', RoleViewSet)
 router.register(r'user-roles', UserRoleViewSet)
+router.register(r'user-profile', UserViewSet)
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user_register'),

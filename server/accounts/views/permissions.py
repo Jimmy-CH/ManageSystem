@@ -1,12 +1,14 @@
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from accounts.models import CustomPermission, Role, UserRole
 from accounts.serializers import CustomPermissionSerializer, RoleSerializer, UserRoleSerializer
 from accounts.permissions import CanManagePermissions, CanManageRoles, CanManageUserRoles
+from common import custom_response
+
+
 # from .utils import has_permission # 可能需要
 
 
@@ -46,7 +48,7 @@ class RoleViewSet(viewsets.ModelViewSet):
             }
             for ur in user_roles
         ]
-        return Response(user_data)
+        return custom_response(user_data)
 
 
 class UserRoleViewSet(viewsets.ModelViewSet):
@@ -70,7 +72,7 @@ class UserRoleViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             user_roles = UserRole.objects.filter(user=user, expires_at__isnull=True)
             roles_data = RoleSerializer([ur.role for ur in user_roles], many=True).data
-            return Response({'user_id': user.id, 'username': user.username, 'roles': roles_data})
+            return custom_response({'user_id': user.id, 'username': user.username, 'roles': roles_data})
 
         elif request.method == 'POST':
             role_ids = request.data.get('role_ids', [])
@@ -82,4 +84,4 @@ class UserRoleViewSet(viewsets.ModelViewSet):
                 role = Role.objects.get(id=role_id)
                 new_user_roles.append(UserRole(user=user, role=role, assigned_by=request.user))
             UserRole.objects.bulk_create(new_user_roles)
-            return Response({'status': 'success', 'message': f'已更新用户 {user.username} 的角色'}, status=status.HTTP_200_OK)
+            return custom_response(message=f'已更新用户 {user.username} 的角色', status=status.HTTP_200_OK)
