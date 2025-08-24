@@ -1,5 +1,5 @@
 
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status, viewsets
@@ -44,6 +44,12 @@ class UserRegistrationView(APIView):
                 }
             }, status=status.HTTP_201_CREATED)
         return custom_response(message=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all().order_by('-id')
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
 
 
 # 获取用户信息
@@ -116,9 +122,6 @@ def logout_view(request):
         )
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = UserProfile.objects.all().order_by('-id')
-    serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
+
 
 

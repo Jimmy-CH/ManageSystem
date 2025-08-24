@@ -18,7 +18,7 @@ class CustomPermissionViewSet(viewsets.ModelViewSet):
     """
     queryset = CustomPermission.objects.all().order_by('name')
     serializer_class = CustomPermissionSerializer
-    permission_classes = [IsAuthenticated, CanManagePermissions] # 应用权限类
+    permission_classes = [IsAuthenticated, CanManagePermissions]  # 应用权限类
     # 可以根据需要添加搜索、过滤
     # filter_backends = [filters.SearchFilter]
     # search_fields = ['name', 'codename', 'app_label']
