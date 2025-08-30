@@ -21,6 +21,8 @@ development:
     port: 6379                 # Redis 默认端口
     password: ""               # 如果 Redis 有密码，填在这里
     db_cache: 0                # 用于 Django 缓存的 Redis DB
+    db_session: 11                # 用于 Django 缓存的 Redis DB
+    db_temp: 12                # 用于 Django 缓存的 Redis DB
     db_celery_broker: 1        # 用于 Celery Broker 的 Redis DB
     db_celery_backend: 2       # 用于 Celery Result Backend 的 Redis DB
 
