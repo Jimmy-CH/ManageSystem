@@ -136,6 +136,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # JWT
     'accounts',
     'rest_framework_simplejwt.token_blacklist',  # 启用黑名单
+    'django_filters',
+    'events',
 ]
 
 # DRF
@@ -145,6 +147,11 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',  # 默认需要认证
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
     ],
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',  # 统一日期时间格式
     'DATE_FORMAT': '%Y-%m-%d',  # 日期格式
