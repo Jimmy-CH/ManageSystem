@@ -8,8 +8,8 @@ development:
     engine: django.db.backends.mysql
     name: 'manager'
     user: 'root'
-    password: '1234'
-    host: 127.0.0.1
+    password: 'yTo*XingDun.456'
+    host: 10.130.18.74
     port: 3306
     options:
       init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
@@ -17,9 +17,9 @@ development:
 
   # Redis 配置 (用于缓存和 Celery)
   redis:
-    host: 127.0.0.1            # Redis 服务器地址
+    host: 10.130.18.74           # Redis 服务器地址
     port: 6379                 # Redis 默认端口
-    password: ""               # 如果 Redis 有密码，填在这里
+    password: "123456"               # 如果 Redis 有密码，填在这里
     db_cache: 0                # 用于 Django 缓存的 Redis DB
     db_session: 11                # 用于 Django 缓存的 Redis DB
     db_temp: 12                # 用于 Django 缓存的 Redis DB

@@ -62,26 +62,34 @@ DATABASES = {
 REDIS_CONFIG = env_config['redis']
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db_cache']}",
-        # 'OPTIONS': {
-        #     'PASSWORD': REDIS_CONFIG['password'],  # 如果有密码
-        #     # 'CONNECTION_POOL_KWARGS': {'max_connections': 50} # 可选
-        # }
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': REDIS_CONFIG.get('password'),
+        },
+        'TIMEOUT': 300,
+        'KEY_PREFIX': 'cache',
     },
     'session': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db_session']}",
-        # 'OPTIONS': {
-        #     'PASSWORD': REDIS_CONFIG.get('password'),
-        # }
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': REDIS_CONFIG.get('password'),
+        },
+        'TIMEOUT': 86400,  # 会话一般更长
+        'KEY_PREFIX': 'session',
     },
     'temp': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db_temp']}",
-        # 'OPTIONS': {
-        #     'PASSWORD': REDIS_CONFIG.get('password'),
-        # }
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': REDIS_CONFIG.get('password'),
+        },
+        'TIMEOUT': 60,
+        'KEY_PREFIX': 'temp',
     },
 }
 
