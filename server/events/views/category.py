@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from events.models import Category
 from events.serializers import CategorySerializer
 from events.filters import CategoryFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -14,9 +16,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]  # 可根据需要调整
     filter_backends = [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter'
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
     ]
     filterset_class = CategoryFilter
     search_fields = ['name']

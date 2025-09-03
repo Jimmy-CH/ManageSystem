@@ -18,7 +18,9 @@ from django.contrib import admin
 from django.urls import path, include
 
 dev_patterns = [
-    path('accounts/', include('accounts.urls'))
+    # path('accounts/', include('accounts.urls')),
+    path('events/', include('events.urls')),
+    path('users/', include('users.urls')),
 ]
 
 urlpatterns = [

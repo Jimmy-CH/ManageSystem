@@ -132,12 +132,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'rest_framework',  # DRF
     'rest_framework_simplejwt',  # JWT
-    'accounts',
     'rest_framework_simplejwt.token_blacklist',  # 启用黑名单
-    'django_filters',
+    # 'rest_framework.authtoken',  # 如果你打算使用Token认证
+    # 'accounts',
     'events',
+    'users',
 ]
 
 # DRF
@@ -185,7 +187,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'middlewares.response_middleware.UnifiedResponseMiddleware',
+    # 'middlewares.response_middleware.UnifiedResponseMiddleware',
 ]
 
 ROOT_URLCONF = 'server.urls'
@@ -408,3 +410,6 @@ LOGGING = {
         },
     },
 }
+
+
+AUTH_USER_MODEL = 'users.User'  # 替换为你的应用名

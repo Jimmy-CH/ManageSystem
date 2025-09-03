@@ -223,3 +223,4 @@ tests/**/coverage/
 *.njsproj
 *.sln
 migrations/
+mysite/
