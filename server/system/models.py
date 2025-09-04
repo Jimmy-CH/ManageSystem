@@ -64,6 +64,7 @@ class StorageConfig(models.Model):
         ('qcloud', '腾讯云COS'),
     ]
 
+
     name = models.CharField(max_length=50, unique=True, verbose_name="配置名称")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="存储类型")
     is_default = models.BooleanField(default=False, verbose_name="是否默认")

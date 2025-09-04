@@ -19,9 +19,9 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 dev_patterns = [
-    # path('accounts/', include('accounts.urls')),
-    path('events/', include('events.urls')),
     path('users/', include('users.urls')),
+    path('events/', include('events.urls')),
+    path('system/', include('system.urls')),
 ]
 
 urlpatterns = [

@@ -1,7 +1,7 @@
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -9,6 +9,7 @@ from .models import User, Role, CustomPermission
 from .serializers import UserSerializer, RoleSerializer, CustomPermissionSerializer, RegisterSerializer, \
     CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 
 class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -102,3 +103,19 @@ class MeView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class CustomPermissionCreateView(APIView):
+    permission_classes = [IsAdminUser]  # 仅管理员可访问
+
+    @extend_schema(
+        request=CustomPermissionSerializer,
+        responses=CustomPermissionSerializer
+    )
+    def post(self, request):
+        # 只有管理员才能创建权限
+        serializer = CustomPermissionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
