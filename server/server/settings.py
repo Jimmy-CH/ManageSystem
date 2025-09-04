@@ -129,17 +129,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
-    'rest_framework',  # DRF
-    'rest_framework_simplejwt',  # JWT
-    'rest_framework_simplejwt.token_blacklist',  # 启用黑名单
-    # 'rest_framework.authtoken',  # 如果你打算使用Token认证
-    # 'accounts',
+    'rest_framework',
+    'drf_spectacular',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'events',
     'users',
 ]
 
 # DRF
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -156,7 +156,6 @@ REST_FRAMEWORK = {
     'DATE_FORMAT': '%Y-%m-%d',  # 日期格式
     'TIME_FORMAT': '%H:%M:%S',  # 时间格式
 
-    # 其他相关配置
     'COERCE_DECIMAL_TO_STRING': False,  # 数字保持原格式
     'UNICODE_JSON': True,  # 支持Unicode
 }
