@@ -216,10 +216,11 @@ package-lock.json
 tests/**/coverage/
 
 # Editor directories and files
-.idea
+.idea/
 .vscode
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 migrations/
+mysite/
