@@ -94,10 +94,6 @@ CACHES = {
 }
 
 # --- Celery 配置 ---
-# 重要: Celery 配置通常放在单独的 celery.py 模块中，但也可以在这里定义变量供其使用
-# 我们将关键的 Celery 配置放入 Django settings，然后在 celery.py 中引用它们
-
-# 从 YAML 配置中构建 Celery URLs
 CELERY_BROKER_URL = env_config['celery']['broker_url'].format(
     password=REDIS_CONFIG['password'],
     host=REDIS_CONFIG['host'],
@@ -155,6 +151,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'EXCEPTION_HANDLER': 'common.custom_exception_handler',
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',  # 统一日期时间格式
     'DATE_FORMAT': '%Y-%m-%d',  # 日期格式
     'TIME_FORMAT': '%H:%M:%S',  # 时间格式
@@ -277,13 +274,7 @@ LOGGING = {
             'style': '{',
         },
         'detailed': {
-            'format': (
-                '{levelname} {asctime} {module} {funcName} {lineno} {message}\n'
-                '    Path: {pathname}\n'
-                '    Request: {request_info}\n'
-                '    User: {user_info}\n'
-                '    IP: {client_ip}\n'
-            ),
+            'format': '{levelname} {asctime} {module}.{funcName}():{lineno} - {message}',
             'style': '{',
         },
         'json': {
