@@ -184,7 +184,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'middlewares.response_middleware.UnifiedResponseMiddleware',
+    # 'middlewares.response_middleware.UnifiedResponseMiddleware',  # 这个中间件会使swagger的输出收到影响
 ]
 
 ROOT_URLCONF = 'server.urls'
@@ -287,7 +287,7 @@ LOGGING = {
     'handlers': {
         # 控制台输出（开发时有用，生产可关闭或保留 ERROR）
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
@@ -356,7 +356,7 @@ LOGGING = {
         # 主应用日志
         'server': {
             'handlers': ['file_info', 'file_error', 'console'],
-            'level': 'INFO',
+            'level': 'DEBUG',  # 👈 开发环境设为 DEBUG
             'propagate': False,
         },
 
