@@ -1,31 +1,32 @@
-import request from "@/utils/request";
+import request from '@/utils/request'
 
-export function getPermissionList() {
+export function getPermissions(params) {
   return request({
-    url: "/accounts/permissions/",
-    method: "get",
-  });
+    url: '/users/permissions/',
+    method: 'get',
+    params
+  })
 }
 
 export function createPermission(data) {
   return request({
-    url: "/accounts/permissions/",
-    data: data,
-    method: "post",
-  });
+    url: '/users/permissions/',
+    method: 'post',
+    data
+  })
 }
 
-export function updatePermission(data) {
+export function updatePermission(id, data) {
   return request({
-    url: `/accounts/permissions/${data.id}/`,
-    data: data,
-    method: "put",
-  });
+    url: `/users/permissions/${id}/`,
+    method: 'put',
+    data
+  })
 }
 
 export function deletePermission(id) {
   return request({
-    url: `/accounts/permissions/${id}/`,
-    method: "delete",
-  });
+    url: `/users/permissions/${id}/`,
+    method: 'delete'
+  })
 }

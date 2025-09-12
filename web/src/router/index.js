@@ -6,6 +6,9 @@ Vue.use(Router)
 /* Layout */
 import Layout from '@/layout'
 
+/* Router Modules */
+import nestedRouter from './modules/nested'
+
 /**
  * Note: sub-menu only appear when route children.length >= 1
  * Detail see: https://panjiachen.github.io/vue-element-admin-site/guide/essentials/router-and-nav.html
@@ -56,39 +59,57 @@ export const constantRoutes = [
   },
 
   {
-    path: '/users',
+    path: '/profile',
     component: Layout,
-    redirect: '/users/user',
-    name: 'Users',
-    meta: { title: '用户管理', icon: 'el-icon-s-help' },
+    redirect: '/profile/user/index',
+    name: 'Profile',
+    // hidden: true,
+    meta: { title: '用户中心', icon: 'user' },
     children: [
       {
-        path: 'user',
-        name: 'User',
-        component: () => import('@/views/users/user/index'),
-        meta: { title: '用户', icon: 'table' }
+        path: 'user/index',
+        component: () => import('@/views/profile/user/index'),
+        name: 'UserProfile',
+        meta: { title: '用户信息', icon: 'user' }
       },
       {
-        path: 'role',
-        name: 'Role',
-        component: () => import('@/views/users/role/index'),
-        meta: { title: '角色', icon: 'table' }
+        path: 'role/index',
+        component: () => import('@/views/profile/role/index'),
+        name: 'RoleProfile',
+        meta: { title: '角色信息', icon: 'user' }
       },
       {
-        path: 'permission',
-        name: 'Permission',
-        component: () => import('@/views/users/permission/index'),
-        meta: { title: '权限', icon: 'tree' }
+        path: 'permission/index',
+        component: () => import('@/views/profile/permission/index'),
+        name: 'PermissionProfile',
+        meta: { title: '权限信息', icon: 'user' }
+      }
+    ]
+  },
+
+  {
+    path: '/example',
+    component: Layout,
+    redirect: '/example/table',
+    name: 'Example',
+    meta: { title: 'Example', icon: 'el-icon-s-help' },
+    children: [
+      {
+        path: 'table',
+        name: 'Table',
+        component: () => import('@/views/table/index'),
+        meta: { title: 'Table', icon: 'table' }
       },
       {
         path: 'tree',
         name: 'Tree',
         component: () => import('@/views/tree/index'),
         meta: { title: 'Tree', icon: 'tree' }
-      },
+      }
     ]
   },
-
+  /** when your routing map is too long, you can split it into small modules **/
+  nestedRouter,
   {
     path: '/form',
     component: Layout,
@@ -101,66 +122,6 @@ export const constantRoutes = [
       }
     ]
   },
-
-  {
-    path: '/nested',
-    component: Layout,
-    redirect: '/nested/menu1',
-    name: 'Nested',
-    meta: {
-      title: 'Nested',
-      icon: 'nested'
-    },
-    children: [
-      {
-        path: 'menu1',
-        component: () => import('@/views/nested/menu1/index'), // Parent router-view
-        name: 'Menu1',
-        meta: { title: 'Menu1' },
-        children: [
-          {
-            path: 'menu1-1',
-            component: () => import('@/views/nested/menu1/menu1-1'),
-            name: 'Menu1-1',
-            meta: { title: 'Menu1-1' }
-          },
-          {
-            path: 'menu1-2',
-            component: () => import('@/views/nested/menu1/menu1-2'),
-            name: 'Menu1-2',
-            meta: { title: 'Menu1-2' },
-            children: [
-              {
-                path: 'menu1-2-1',
-                component: () => import('@/views/nested/menu1/menu1-2/menu1-2-1'),
-                name: 'Menu1-2-1',
-                meta: { title: 'Menu1-2-1' }
-              },
-              {
-                path: 'menu1-2-2',
-                component: () => import('@/views/nested/menu1/menu1-2/menu1-2-2'),
-                name: 'Menu1-2-2',
-                meta: { title: 'Menu1-2-2' }
-              }
-            ]
-          },
-          {
-            path: 'menu1-3',
-            component: () => import('@/views/nested/menu1/menu1-3'),
-            name: 'Menu1-3',
-            meta: { title: 'Menu1-3' }
-          }
-        ]
-      },
-      {
-        path: 'menu2',
-        component: () => import('@/views/nested/menu2/index'),
-        name: 'Menu2',
-        meta: { title: 'menu2' }
-      }
-    ]
-  },
-
   {
     path: 'external-link',
     component: Layout,

@@ -30,33 +30,23 @@ module.exports = {
   lintOnSave: process.env.NODE_ENV === 'development',
   productionSourceMap: false,
   devServer: {
-    // // 本地开发服务器的端口
-    // port: 8080,
-    // 是否自动打开浏览器
-    open: true,
     port: port,
+    open: true,
     overlay: {
       warnings: false,
       errors: true
     },
-    // 代理配置
+    // before: require('./mock/mock-server.js'),
+    // 👇 添加代理配置
     proxy: {
-      // 代理以 /api 开头的请求
       '/api': {
-        // 目标后端服务地址
-        target: 'http://localhost:8020', // 替换为你的后端服务地址
-        // 是否启用安全证书（https）
-        secure: false,
-        // 是否修改请求头中的 host 指向目标地址
-        changeOrigin: true,
-        // 路径重写：将 /api 前缀去掉
+        target: 'http://localhost:8020', // 你的本地后端地址
+        changeOrigin: true // 改变源，避免跨域问题
         // pathRewrite: {
-        //   '^/api': ''
+        //   '^/api': '' // 可选：重写路径，去掉 /api 前缀
         // }
       }
-    },
-
-    // before: require('./mock/mock-server.js')
+    }
   },
   configureWebpack: {
     // provide the app's title in webpack's name field, so that

@@ -15,7 +15,7 @@ from typing import Optional
 class RedisDistributedLock:
     def __init__(
         self,
-        redis_cache,  # 传入上面的 shared_redis_cache
+        redis_cache,
         lock_key: str,
         expire_time: int = 120,
         max_retries: int = 10,

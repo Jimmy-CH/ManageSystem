@@ -1,7 +1,7 @@
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -9,6 +9,11 @@ from .models import User, Role, CustomPermission
 from .serializers import UserSerializer, RoleSerializer, CustomPermissionSerializer, RegisterSerializer, \
     CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from utils import StandardResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -31,7 +36,7 @@ class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
             if cat not in grouped:
                 grouped[cat] = []
             grouped[cat].append(CustomPermissionSerializer(p).data)
-        return Response(grouped)
+        return StandardResponse(data=grouped)
 
 
 class RoleViewSet(viewsets.ModelViewSet):
@@ -46,7 +51,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def me(self, request):
         serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return StandardResponse(data=serializer.data)
 
 
 # 登录、注册、退出保持不变
@@ -88,9 +93,11 @@ class LogoutView(APIView):
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response({"message": "登出成功"}, status=status.HTTP_205_RESET_CONTENT)
+
+            return StandardResponse(code=205, message="登出成功")
         except Exception as e:
-            return Response({"error": "无效的 token"}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"登出失败，error: {e}")
+            return StandardResponse(code=508, message="无效的 token")
 
 
 class MeView(APIView):
@@ -101,4 +108,20 @@ class MeView(APIView):
 
     def get(self, request):
         serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return StandardResponse(data=serializer.data)
+
+
+class CustomPermissionCreateView(APIView):
+    permission_classes = [IsAdminUser]  # 仅管理员可访问
+
+    @extend_schema(
+        request=CustomPermissionSerializer,
+        responses=CustomPermissionSerializer
+    )
+    def post(self, request):
+        # 只有管理员才能创建权限
+        serializer = CustomPermissionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)

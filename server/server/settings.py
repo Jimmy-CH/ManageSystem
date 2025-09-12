@@ -129,17 +129,23 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
-    'rest_framework',  # DRF
-    'rest_framework_simplejwt',  # JWT
-    'rest_framework_simplejwt.token_blacklist',  # 启用黑名单
-    # 'rest_framework.authtoken',  # 如果你打算使用Token认证
-    # 'accounts',
+    'rest_framework',
+    'drf_spectacular',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'events',
     'users',
+    'system',
 ]
 
 # DRF
 REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'common.renderers.StandardJSONRenderer',  # 替换为你的路径
+        'rest_framework.renderers.JSONRenderer',     # 保留原生备用
+        'rest_framework.renderers.BrowsableAPIRenderer',  # 开发用
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -156,7 +162,6 @@ REST_FRAMEWORK = {
     'DATE_FORMAT': '%Y-%m-%d',  # 日期格式
     'TIME_FORMAT': '%H:%M:%S',  # 时间格式
 
-    # 其他相关配置
     'COERCE_DECIMAL_TO_STRING': False,  # 数字保持原格式
     'UNICODE_JSON': True,  # 支持Unicode
 }
@@ -167,7 +172,7 @@ MEDIA_ROOT = BASE_DIR / 'media'  # 例如：项目根目录下的 media/ 文件�
 
 # JWT 配置（可选自定义）
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*24),  # 访问 Token 有效期
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*72),  # 访问 Token 有效期
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # 刷新 Token 有效期
     'ROTATE_REFRESH_TOKENS': True,                   # 是否轮换刷新 Token
     'BLACKLIST_AFTER_ROTATION': True,                # 刷新后旧 Token 是否加入黑名单
@@ -184,7 +189,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'middlewares.response_middleware.UnifiedResponseMiddleware',
+    # 'middlewares.response_middleware.UnifiedResponseMiddleware',  # 这个中间件会使swagger的输出收到影响
 ]
 
 ROOT_URLCONF = 'server.urls'
@@ -230,14 +235,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+LANGUAGE_CODE = 'zh-hans'  # 简体中文
+TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -287,7 +288,7 @@ LOGGING = {
     'handlers': {
         # 控制台输出（开发时有用，生产可关闭或保留 ERROR）
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
@@ -356,7 +357,7 @@ LOGGING = {
         # 主应用日志
         'server': {
             'handlers': ['file_info', 'file_error', 'console'],
-            'level': 'INFO',
+            'level': 'DEBUG',  # 👈 开发环境设为 DEBUG
             'propagate': False,
         },
 
