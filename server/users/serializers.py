@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate
 class CustomPermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomPermission
-        fields = ['id', 'codename', 'name', 'description', 'category']
+        fields = ['id', 'codename', 'name', 'description', 'category', 'created_at', 'updated_at']
 
 
 class RoleSerializer(serializers.ModelSerializer):
