@@ -36,7 +36,17 @@ module.exports = {
       warnings: false,
       errors: true
     },
-    before: require('./mock/mock-server.js')
+    // before: require('./mock/mock-server.js'),
+    // 👇 添加代理配置
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8020', // 你的本地后端地址
+        changeOrigin: true // 改变源，避免跨域问题
+        // pathRewrite: {
+        //   '^/api': '' // 可选：重写路径，去掉 /api 前缀
+        // }
+      }
+    }
   },
   configureWebpack: {
     // provide the app's title in webpack's name field, so that

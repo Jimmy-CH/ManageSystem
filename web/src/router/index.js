@@ -59,6 +59,35 @@ export const constantRoutes = [
   },
 
   {
+    path: '/profile',
+    component: Layout,
+    redirect: '/profile/user/index',
+    name: 'Profile',
+    // hidden: true,
+    meta: { title: '用户中心', icon: 'user' },
+    children: [
+      {
+        path: 'user/index',
+        component: () => import('@/views/profile/user/index'),
+        name: 'UserProfile',
+        meta: { title: '用户信息', icon: 'user' }
+      },
+      {
+        path: 'role/index',
+        component: () => import('@/views/profile/role/index'),
+        name: 'RoleProfile',
+        meta: { title: '角色信息', icon: 'user' }
+      },
+      {
+        path: 'permission/index',
+        component: () => import('@/views/profile/permission/index'),
+        name: 'PermissionProfile',
+        meta: { title: '权限信息', icon: 'user' }
+      }
+    ]
+  },
+
+  {
     path: '/example',
     component: Layout,
     redirect: '/example/table',
