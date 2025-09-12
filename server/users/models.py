@@ -2,9 +2,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+from common import BaseModel
+
 
 # 自定义权限表
-class CustomPermission(models.Model):
+class CustomPermission(BaseModel):
     """
     自定义权限，不依赖 Django 默认的 Permission 模型
     """

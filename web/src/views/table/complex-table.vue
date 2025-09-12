@@ -40,34 +40,33 @@
           <span>{{ row.id }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" width="200px" align="center">
+      <el-table-column label="Date" width="150px" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.created_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+          <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <!-- <el-table-column label="Title" min-width="150px">
+      <el-table-column label="Title" min-width="150px">
         <template slot-scope="{row}">
           <span class="link-type" @click="handleUpdate(row)">{{ row.title }}</span>
           <el-tag>{{ row.type | typeFilter }}</el-tag>
         </template>
+      </el-table-column>
+      <el-table-column label="Author" width="110px" align="center">
+        <template slot-scope="{row}">
+          <span>{{ row.author }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="showReviewer" label="Reviewer" width="110px" align="center">
+        <template slot-scope="{row}">
+          <span style="color:red;">{{ row.reviewer }}</span>
+        </template>
+      </el-table-column>
+      <!-- <el-table-column label="Imp" width="80px">
+        <template slot-scope="{row}">
+          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="meta-item__icon" />
+        </template>
       </el-table-column> -->
-      <el-table-column label="角色" width="200px" align="center">
-        <template slot-scope="{row}">
-          <span>{{ row.name }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="描述" width="200px" align="center">
-        <template slot-scope="{row}">
-          <span style="color:red;">{{ row.description }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="权限" width="280px">
-        <template slot-scope="{row}">
-          <!-- <svg-icon  icon-class="star" class="meta-item__icon" /> -->
-          <el-tag v-for="(item, index) in row.permissions" :key="index">{{ item.name }}</el-tag>
-        </template>
-      </el-table-column>
-      <!-- <el-table-column label="Readings" align="center" width="95">
+      <el-table-column label="Readings" align="center" width="95">
         <template slot-scope="{row}">
           <span v-if="row.pageviews" class="link-type" @click="handleFetchPv(row.pageviews)">{{ row.pageviews }}</span>
           <span v-else>0</span>
@@ -79,8 +78,8 @@
             {{ row.status }}
           </el-tag>
         </template>
-      </el-table-column> -->
-      <el-table-column label="操作" align="center" width="330" class-name="small-padding fixed-width">
+      </el-table-column>
+      <el-table-column label="Actions" align="center" width="230" class-name="small-padding fixed-width">
         <template slot-scope="{row,$index}">
           <el-button type="primary" size="mini" @click="handleUpdate(row)">
             Edit
@@ -236,12 +235,11 @@ export default {
       getRoles(this.listQuery).then(response => {
         this.list = response.data
         this.total = response.data.length
-        this.listLoading = false
 
         // Just to simulate the time of the request
-        // setTimeout(() => {
-        //   this.listLoading = false
-        // }, 1.5 * 1000)
+        setTimeout(() => {
+          this.listLoading = false
+        }, 1.5 * 1000)
       })
     },
     handleFilter() {

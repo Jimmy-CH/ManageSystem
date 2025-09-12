@@ -8,6 +8,7 @@ import Layout from '@/layout'
 
 /* Router Modules */
 import nestedRouter from './modules/nested'
+import tableRouter from './modules/table'
 
 /**
  * Note: sub-menu only appear when route children.length >= 1
@@ -63,7 +64,6 @@ export const constantRoutes = [
     component: Layout,
     redirect: '/profile/user/index',
     name: 'Profile',
-    // hidden: true,
     meta: { title: '用户中心', icon: 'user' },
     children: [
       {
@@ -109,6 +109,7 @@ export const constantRoutes = [
     ]
   },
   /** when your routing map is too long, you can split it into small modules **/
+  tableRouter,
   nestedRouter,
   {
     path: '/form',

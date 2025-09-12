@@ -2,70 +2,47 @@
   <div class="app-container">
     <!-- Note that row-key is necessary to get a correct row order. -->
     <el-table ref="dragTable" v-loading="listLoading" :data="list" row-key="id" border fit highlight-current-row style="width: 100%">
-      <el-table-column align="center" label="ID" width="95">
-        <template slot-scope="scope">
-          {{ scope.$index }}
+      <el-table-column align="center" label="ID" width="65">
+        <template slot-scope="{row}">
+          <span>{{ row.id }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="用户" width="200" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.username }}
+
+      <el-table-column width="180px" align="center" label="Date">
+        <template slot-scope="{row}">
+          <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="头像" width="200" align="center">
-        <template slot-scope="scope">
-          <span>{{ scope.row.avatar }}</span>
+
+      <el-table-column min-width="300px" label="Title">
+        <template slot-scope="{row}">
+          <span>{{ row.title }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="电话" width="200" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.phone }}
+
+      <el-table-column width="110px" align="center" label="Author">
+        <template slot-scope="{row}">
+          <span>{{ row.author }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="邮箱" width="200" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.email }}
+
+      <!-- <el-table-column width="100px" label="Importance">
+        <template slot-scope="{row}">
+          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="icon-star" />
+        </template>
+      </el-table-column> -->
+
+      <el-table-column align="center" label="Readings" width="95">
+        <template slot-scope="{row}">
+          <span>{{ row.pageviews }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="部门" width="200" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.department }}
-        </template>
-      </el-table-column>
-      <el-table-column label="职位" width="200" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.position }}
-        </template>
-      </el-table-column>
-      <el-table-column label="是否活跃" width="100" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.is_active }}
-        </template>
-      </el-table-column>
-      <el-table-column label="Status" class-name="status-col" width="100">
+
+      <el-table-column class-name="status-col" label="Status" width="110">
         <template slot-scope="{row}">
           <el-tag :type="row.status | statusFilter">
-            {{ row.is_active }}
+            {{ row.status }}
           </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="角色" width="200" align="center" prop="roles">
-        <template slot-scope="scope">
-          <div v-for="(item, index) in scope.row.roles" :key="index">
-            {{ item.name }}
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column align="center" prop="created_at" label="创建时间" width="250">
-        <template slot-scope="scope">
-          <i class="el-icon-time" />
-          <span>{{ scope.row.created_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column align="center" prop="updated_at" label="更新时间" width="250">
-        <template slot-scope="scope">
-          <i class="el-icon-time" />
-          <span>{{ scope.row.updated_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
 
@@ -93,17 +70,17 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        true: 'success',
+        published: 'success',
         draft: 'info',
-        false: 'danger'
+        deleted: 'danger'
       }
       return statusMap[status]
     }
   },
   data() {
     return {
-      list: [],
-      total: 0,
+      list: null,
+      total: null,
       listLoading: true,
       listQuery: {
         page: 1,
@@ -117,18 +94,13 @@ export default {
   created() {
     this.getList()
   },
-
-  beforeDestroy() {
-    if (this.sortable) {
-      this.sortable.destroy()
-    }
-  },
   methods: {
     async getList() {
       this.listLoading = true
       const response = await getUsers(this.listQuery)
-      this.list = response.data || []
-      this.total = response.data.length || 0
+      console.log(response)
+      this.list = response.data
+      this.total = response.data.length
       this.listLoading = false
       this.oldList = this.list.map(v => v.id)
       this.newList = this.oldList.slice()
