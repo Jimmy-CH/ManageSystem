@@ -10,6 +10,10 @@ from .serializers import UserSerializer, RoleSerializer, CustomPermissionSeriali
     CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
+from utils import StandardResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -32,7 +36,7 @@ class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
             if cat not in grouped:
                 grouped[cat] = []
             grouped[cat].append(CustomPermissionSerializer(p).data)
-        return Response(grouped)
+        return StandardResponse(data=grouped)
 
 
 class RoleViewSet(viewsets.ModelViewSet):
@@ -47,7 +51,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def me(self, request):
         serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return StandardResponse(data=serializer.data)
 
 
 # 登录、注册、退出保持不变
@@ -89,9 +93,11 @@ class LogoutView(APIView):
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response({"message": "登出成功"}, status=status.HTTP_205_RESET_CONTENT)
+
+            return StandardResponse(code=205, message="登出成功")
         except Exception as e:
-            return Response({"error": "无效的 token"}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"登出失败，error: {e}")
+            return StandardResponse(code=508, message="无效的 token")
 
 
 class MeView(APIView):
@@ -102,7 +108,7 @@ class MeView(APIView):
 
     def get(self, request):
         serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return StandardResponse(data=serializer.data)
 
 
 class CustomPermissionCreateView(APIView):
