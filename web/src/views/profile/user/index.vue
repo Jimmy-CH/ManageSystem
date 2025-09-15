@@ -12,11 +12,11 @@
           {{ scope.row.username }}
         </template>
       </el-table-column>
-      <el-table-column label="头像" width="200" align="center">
+      <!-- <el-table-column label="头像" width="200" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.avatar }}</span>
         </template>
-      </el-table-column>
+      </el-table-column> -->
       <el-table-column label="电话" width="200" align="center">
         <template slot-scope="scope">
           {{ scope.row.phone }}
@@ -37,15 +37,10 @@
           {{ scope.row.position }}
         </template>
       </el-table-column>
-      <el-table-column label="是否活跃" width="100" align="center">
-        <template slot-scope="scope">
-          {{ scope.row.is_active }}
-        </template>
-      </el-table-column>
-      <el-table-column label="Status" class-name="status-col" width="100">
+      <el-table-column label="状态" class-name="status-col" width="100">
         <template slot-scope="{row}">
           <el-tag :type="row.status | statusFilter">
-            {{ row.is_active }}
+            {{ row.status ? "启用" : "未启用" }}
           </el-tag>
         </template>
       </el-table-column>
@@ -54,6 +49,11 @@
           <div v-for="(item, index) in scope.row.roles" :key="index">
             {{ item.name }}
           </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="Imp" width="80px">
+        <template slot-scope="{row}">
+          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="meta-item__icon" />
         </template>
       </el-table-column>
       <el-table-column align="center" prop="created_at" label="创建时间" width="250">

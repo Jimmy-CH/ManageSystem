@@ -79,8 +79,8 @@ export default {
   },
   data() {
     return {
-      list: null,
-      total: null,
+      list: [],
+      total: 0,
       listLoading: true,
       listQuery: {
         page: 1,
@@ -99,8 +99,8 @@ export default {
       this.listLoading = true
       const response = await getUsers(this.listQuery)
       console.log(response)
-      this.list = response.data
-      this.total = response.data.length
+      this.list = response.data || []
+      this.total = response.data.length || 0
       this.listLoading = false
       this.oldList = this.list.map(v => v.id)
       this.newList = this.oldList.slice()
