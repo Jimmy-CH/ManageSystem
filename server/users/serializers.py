@@ -8,22 +8,39 @@ from django.contrib.auth import authenticate
 class CustomPermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomPermission
-        fields = ['id', 'codename', 'name', 'description', 'category', 'created_at', 'updated_at']
+        fields = "__all__"
+
+
+class RolePermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomPermission
+        fields = ['id', 'name']
 
 
 class RoleSerializer(serializers.ModelSerializer):
     permission_ids = serializers.PrimaryKeyRelatedField(
         source='permissions',
-        queryset=CustomPermission.objects.all(),
+        queryset=CustomPermission.objects.only('id'),
         many=True,
         write_only=True,
         required=False
     )
-    permissions = CustomPermissionSerializer(many=True, read_only=True)
+    permissions = RolePermissionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Role
-        fields = ['id', 'name', 'description', 'permissions', 'permission_ids', 'created_at']
+        fields = "__all__"
+
+    def update(self, instance, validated_data):
+        # 可选：实现“不传 permission_ids 就不更新权限”
+        permissions = validated_data.pop('permissions', None)
+
+        role = super().update(instance, validated_data)
+
+        if permissions is not None:
+            role.permissions.set(permissions)
+
+        return role
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -39,12 +56,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            'id', 'username', 'first_name', 'last_name', 'email',
-            'phone', 'department', 'position', 'avatar',
-            'is_active', 'date_joined', 'roles', 'role_ids',
-            'password', 'created_at', 'updated_at'
-        ]
+        fields = "__all__"
 
     def create(self, validated_data):
         roles = validated_data.pop('roles', [])

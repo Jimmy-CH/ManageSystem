@@ -140,6 +140,7 @@ INSTALLED_APPS = [
 
 # DRF
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'common.pagination.FrontendCompatiblePagination',
     'DEFAULT_RENDERER_CLASSES': [
         'common.renderers.StandardJSONRenderer',  # 替换为你的路径
         'rest_framework.renderers.JSONRenderer',     # 保留原生备用
@@ -154,8 +155,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',     # 搜索
+        'rest_framework.filters.OrderingFilter',   # 排序
     ],
     'EXCEPTION_HANDLER': 'common.custom_exception_handler',
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',  # 统一日期时间格式

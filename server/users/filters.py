@@ -1,6 +1,7 @@
 
 import django_filters
-from .models import User, Role
+from django_filters import rest_framework as filters
+from .models import Role, CustomPermission, User
 
 
 class UserFilter(django_filters.FilterSet):
@@ -14,9 +15,37 @@ class UserFilter(django_filters.FilterSet):
         fields = ['username', 'email', 'is_active', 'role']
 
 
-class RoleFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+class RoleFilter(filters.FilterSet):
+    # 1. 精确匹配字段
+    status = filters.BooleanFilter(field_name='status', label='状态')
+    importance = filters.NumberFilter(field_name='importance', label='重要程度')
+
+    # 2. 模糊搜索（名称、描述）
+    name = filters.CharFilter(field_name='name', lookup_expr='icontains', label='角色名称')
+    description = filters.CharFilter(field_name='description', lookup_expr='icontains', label='描述')
+
+    # 3. 权限过滤（多对多）→ 按权限ID过滤
+    permission_id = filters.ModelMultipleChoiceFilter(
+        field_name='permissions',
+        queryset=CustomPermission.objects.all(),
+        label='权限ID',
+        conjoined=False  # False = OR（满足任一权限即可），True = AND（必须包含所有权限）
+    )
+
+    # 4. 权限名称过滤（可选）
+    permission_name = filters.CharFilter(
+        field_name='permissions__name',
+        lookup_expr='icontains',
+        label='权限名称'
+    )
 
     class Meta:
         model = Role
-        fields = ['name']
+        fields = [
+            'name',
+            'description',
+            'status',
+            'importance',
+            'permission_id',
+            'permission_name',
+        ]

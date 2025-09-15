@@ -5,13 +5,19 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from .filters import RoleFilter
 from .models import User, Role, CustomPermission
 from .serializers import UserSerializer, RoleSerializer, CustomPermissionSerializer, RegisterSerializer, \
     CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
+from django.db.models import Prefetch
 from utils import StandardResponse
 import logging
+import pandas as pd
+from django.http import HttpResponse
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +44,65 @@ class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
             grouped[cat].append(CustomPermissionSerializer(p).data)
         return StandardResponse(data=grouped)
 
+    @action(detail=False, methods=['get'])
+    def all(self, request):
+        """
+        返回所有权限
+        """
+        queryset = self.get_queryset().values('id', 'name')
+        return StandardResponse(data=list(queryset))
+
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.prefetch_related('permissions').all().order_by('name')
+
+    queryset = Role.objects.prefetch_related(
+        Prefetch(
+            'permissions',
+            queryset=CustomPermission.objects.only('id', 'name').order_by('name')
+        )
+    ).all().order_by('name')
     serializer_class = RoleSerializer
+    filterset_class = RoleFilter  # ← 启用过滤器
+    search_fields = ['name', 'description']
+    ordering_fields = ['id', 'name', 'importance', 'created_at']
+    ordering = ['id']  # 默认排序
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """
+        导出角色数据为 Excel
+        支持按当前筛选条件导出（过滤、搜索、排序）
+        """
+        # 1. 获取过滤后的 queryset（应用了 filter + search + ordering）
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # 2. 遍历数据，构建导出结构
+        data = []
+        for role in queryset:
+            # 获取权限名称列表，并拼接成字符串
+            permission_names = ', '.join([p.name for p in role.permissions.all()])
+            data.append({
+                'ID': role.id,
+                '角色名称': role.name,
+                '描述': role.description or '',
+                '状态': '启用' if role.status else '禁用',
+                '重要程度': role.importance,
+                '权限列表': permission_names,
+                '创建时间': role.created_at.strftime('%Y-%m-%d %H:%M:%S') if role.created_at else '',
+                '更新时间': role.updated_at.strftime('%Y-%m-%d %H:%M:%S') if role.updated_at else '',
+            })
+
+        # 3. 用 pandas 生成 Excel
+        df = pd.DataFrame(data)
+
+        # 4. 写入内存
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="角色列表.xlsx"'
+
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='角色数据')
+
+        return response
 
 
 class UserViewSet(viewsets.ModelViewSet):
