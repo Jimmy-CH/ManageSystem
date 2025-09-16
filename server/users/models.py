@@ -14,6 +14,8 @@ class CustomPermission(BaseModel):
     name = models.CharField("权限名称", max_length=100)
     description = models.TextField("描述", blank=True, null=True)
     category = models.CharField("分类", max_length=50, help_text="用于前端分组展示，如 content, user, system")
+    importance = models.PositiveIntegerField("重要程度", default=1)
+    status = models.BooleanField("状态", default=True)
 
     class Meta:
         verbose_name = "自定义权限"
@@ -23,11 +25,12 @@ class CustomPermission(BaseModel):
         return f"{self.name} ({self.codename})"
 
 
-class Role(models.Model):
+class Role(BaseModel):
     name = models.CharField("角色名称", max_length=50, unique=True)
     description = models.CharField("描述", max_length=200, blank=True, null=True)
     permissions = models.ManyToManyField(CustomPermission, verbose_name="权限", blank=True)
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+    importance = models.PositiveIntegerField("重要程度", default=1)
+    status = models.BooleanField("状态", default=True)
 
     class Meta:
         verbose_name = "角色"
@@ -43,9 +46,10 @@ class User(AbstractUser):
     avatar = models.ImageField("头像", upload_to='avatars/', blank=True, null=True)
     department = models.CharField("部门", max_length=50, blank=True, null=True)
     position = models.CharField("职位", max_length=50, blank=True, null=True)
-    is_active = models.BooleanField("是否启用", default=True)
+    status = models.BooleanField("是否启用", default=True)
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
     updated_at = models.DateTimeField("更新时间", auto_now=True)
+    importance = models.PositiveIntegerField("重要程度", default=1)
 
     # 用户直接关联角色（一个用户可有多个角色）
     roles = models.ManyToManyField(Role, verbose_name="角色", blank=True)

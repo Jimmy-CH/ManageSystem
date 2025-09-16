@@ -45,6 +45,8 @@ except KeyError:
 # 应用配置到 Django settings
 SECRET_KEY = env_config['secret_key']
 DEBUG = env_config['debug']
+print(f"Current Environment: {ENVIRONMENT}")
+print(f"Current DEBUG: {DEBUG}")
 # 数据库 (MySQL)
 DATABASES = {
     'default': {
@@ -140,6 +142,7 @@ INSTALLED_APPS = [
 
 # DRF
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'common.pagination.FrontendCompatiblePagination',
     'DEFAULT_RENDERER_CLASSES': [
         'common.renderers.StandardJSONRenderer',  # 替换为你的路径
         'rest_framework.renderers.JSONRenderer',     # 保留原生备用
@@ -154,8 +157,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',     # 搜索
+        'rest_framework.filters.OrderingFilter',   # 排序
     ],
     'EXCEPTION_HANDLER': 'common.custom_exception_handler',
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',  # 统一日期时间格式
@@ -260,148 +263,46 @@ LOG_SIZE = 100 * 1024 * 1024  # 100MB
 LOG_BACKUP_COUNT = 30  # 保留30个备份
 
 # 自定义日志格式
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,  # 注意：设为 False，避免禁用 Django 默认日志器
-
-    # 格式化器
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+if DEBUG:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG',
+            },
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
+        'loggers': {
+            'django.request': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False},
+            'django.db.backends': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
+            '': {'handlers': ['console'], 'level': 'DEBUG'},  # ← 所有 logger 都打印到终端
         },
-        'detailed': {
-            'format': '{levelname} {asctime} {module}.{funcName}():{lineno} - {message}',
-            'style': '{',
+    }
+else:
+    # 生产环境：只记录 ERROR 到文件，不打印到控制台
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'file': {
+                'level': 'ERROR',
+                'class': 'logging.FileHandler',
+                'filename': LOGS_ROOT / 'error.log',
+                'formatter': 'verbose',
+            },
         },
-        'json': {
-            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(asctime)s %(levelname)s %(name)s %(module)s %(funcName)s %(lineno)d %(message)s',
+        'loggers': {
+            'django.request': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+            '': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+            },
         },
-    },
-
-    # 处理器：决定日志输出方式
-    'handlers': {
-        # 控制台输出（开发时有用，生产可关闭或保留 ERROR）
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-
-        # INFO 及以上日志，按大小轮转
-        'file_info': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_ROOT / 'info.log',
-            'maxBytes': LOG_SIZE,
-            'backupCount': LOG_BACKUP_COUNT,
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
-        },
-
-        # ERROR 和 CRITICAL 单独记录
-        'file_error': {
-            'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_ROOT / 'error.log',
-            'maxBytes': LOG_SIZE,
-            'backupCount': 30,
-            'formatter': 'detailed',
-            'encoding': 'utf-8',
-        },
-
-        # Django 框架日志（数据库、请求、启动等）
-        'django_file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_ROOT / 'django.log',
-            'maxBytes': LOG_SIZE,
-            'backupCount': LOG_BACKUP_COUNT,
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
-        },
-
-        # 安全相关日志（如登录失败、权限拒绝）
-        'security_file': {
-            'level': 'WARNING',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_ROOT / 'security.log',
-            'maxBytes': LOG_SIZE,
-            'backupCount': 90,  # 安全日志保留更久
-            'formatter': 'detailed',
-            'encoding': 'utf-8',
-        },
-
-        # 可选：发送严重错误到邮箱
-        'mail_admins': {
-            'level': 'CRITICAL',
-            'class': 'django.utils.log.AdminEmailHandler',
-            'include_html': True,
-            'formatter': 'detailed',
-        },
-
-        # 可选：集成 Sentry（推荐用于生产错误监控）
-        # 'sentry': {
-        #     'level': 'ERROR',
-        #     'class': 'sentry_sdk.integrations.logging.EventHandler',
-        # },
-    },
-
-    # 日志器（Logger）
-    'loggers': {
-        # 主应用日志
-        'server': {
-            'handlers': ['file_info', 'file_error', 'console'],
-            'level': 'DEBUG',  # 👈 开发环境设为 DEBUG
-            'propagate': False,
-        },
-
-        # Django 核心日志
-        'django': {
-            'handlers': ['django_file', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-
-        # Django 请求日志（可选开启 DEBUG 级别）
-        'django.request': {
-            'handlers': ['file_error', 'security_file', 'mail_admins'],
-            'level': 'WARNING',  # 只记录 WARNING 及以上
-            'propagate': False,
-        },
-
-        # Django 认证和权限（安全敏感）
-        'django.security': {
-            'handlers': ['security_file', 'mail_admins'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-
-        # 数据库查询日志（生产环境建议关闭，或设为 WARNING）
-        'django.db.backends': {
-            'handlers': ['file_error'],
-            'level': 'WARNING',  # 生产环境不要记录所有 SQL
-            'propagate': False,
-        },
-
-        # 第三方库控制（避免日志过多）
-        'requests': {
-            'handlers': ['file_info'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-        'urllib3': {
-            'handlers': ['file_info'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-    },
-}
-
+    }
 
 AUTH_USER_MODEL = 'users.User'  # 替换为你的应用名

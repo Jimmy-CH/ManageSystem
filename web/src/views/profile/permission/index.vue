@@ -7,18 +7,6 @@
         </template>
       </el-table-column>
 
-      <el-table-column align="center" prop="created_at" label="创建时间" width="250">
-        <template slot-scope="scope">
-          <i class="el-icon-time" />
-          <span>{{ scope.row.created_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column align="center" prop="updated_at" label="更新时间" width="250">
-        <template slot-scope="scope">
-          <i class="el-icon-time" />
-          <span>{{ scope.row.updated_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
       <el-table-column width="200px" align="center" label="名称">
         <template slot-scope="{row}">
           <span>{{ row.name }}</span>
@@ -37,6 +25,30 @@
       <el-table-column width="200px" align="center" label="分类">
         <template slot-scope="{row}">
           <span>{{ row.category }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" class-name="status-col" width="100">
+        <template slot-scope="{row}">
+          <el-tag :type="row.status | statusFilter">
+            {{ row.status ? "启用" : "未启用" }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="Imp" width="80px">
+        <template slot-scope="{row}">
+          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="meta-item__icon" />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" prop="created_at" label="创建时间" width="250">
+        <template slot-scope="scope">
+          <i class="el-icon-time" />
+          <span>{{ scope.row.created_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" prop="updated_at" label="更新时间" width="250">
+        <template slot-scope="scope">
+          <i class="el-icon-time" />
+          <span>{{ scope.row.updated_at | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
 
@@ -88,13 +100,12 @@
 import { getPermissions } from '@/api/permission'
 
 export default {
-  name: 'InlineEditTable',
+  name: 'PermissionPage',
   filters: {
     statusFilter(status) {
       const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
+        true: 'success',
+        false: 'danger'
       }
       return statusMap[status]
     }

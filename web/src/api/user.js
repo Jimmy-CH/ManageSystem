@@ -53,3 +53,19 @@ export function deleteUser(id) {
     method: 'delete'
   })
 }
+
+export function getUserRoles() {
+  return request({
+    url: '/users/roles/all/',
+    method: 'get'
+  })
+}
+
+export function exportUsers(params) {
+  return request({
+    url: '/users/user/export/',
+    method: 'get',
+    params,
+    responseType: 'blob' // ← 关键！下载文件
+  })
+}

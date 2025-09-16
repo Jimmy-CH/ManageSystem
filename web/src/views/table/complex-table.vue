@@ -185,7 +185,7 @@ export default {
   data() {
     return {
       tableKey: 0,
-      list: null,
+      list: [],
       total: 0,
       listLoading: true,
       listQuery: {
@@ -233,8 +233,8 @@ export default {
     getList() {
       this.listLoading = true
       getRoles(this.listQuery).then(response => {
-        this.list = response.data
-        this.total = response.data.length
+        this.list = response.data || []
+        this.total = response.data.length || 0
 
         // Just to simulate the time of the request
         setTimeout(() => {

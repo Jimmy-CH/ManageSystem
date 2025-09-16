@@ -30,3 +30,19 @@ export function deleteRole(id) {
     method: 'delete'
   })
 }
+
+export function getRolePermissions() {
+  return request({
+    url: `/users/permissions/all/`,
+    method: 'get'
+  })
+}
+
+export function exportRoles(params) {
+  return request({
+    url: '/users/roles/export/',
+    method: 'get',
+    params,
+    responseType: 'blob' // ← 关键！下载文件
+  })
+}
