@@ -100,12 +100,11 @@
 import { getPermissions } from '@/api/permission'
 
 export default {
-  name: 'InlineEditTable',
+  name: 'PermissionPage',
   filters: {
     statusFilter(status) {
       const statusMap = {
         true: 'success',
-        draft: 'info',
         false: 'danger'
       }
       return statusMap[status]

@@ -152,14 +152,13 @@ import Pagination from '@/components/Pagination' // secondary package based on e
 const permissionOptions = []
 
 export default {
-  name: 'ComplexTable',
+  name: 'RolePage',
   components: { Pagination },
   directives: { waves },
   filters: {
     statusFilter(status) {
       const statusMap = {
         true: 'success',
-        draft: 'info',
         false: 'danger'
       }
       return statusMap[status]
@@ -176,8 +175,8 @@ export default {
         limit: 20,
         importance: undefined,
         name: undefined,
-        type: undefined,
-        ordering: 'id'
+        ordering: 'id',
+        status: undefined
       },
       importanceOptions: [1, 2, 3],
       permissionOptions,
@@ -200,9 +199,8 @@ export default {
       dialogPvVisible: false,
       pvData: [],
       rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
+        name: [{ required: true, message: 'name is required', trigger: 'change' }],
+        status: [{ required: true, message: 'status is required', trigger: 'change' }]
       },
       downloadLoading: false,
       permissionLoading: false,
