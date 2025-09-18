@@ -1,6 +1,6 @@
 
 from django.core.management.base import BaseCommand, CommandError
-from scripts.clear_fake_data import main
+from scripts.clear_user_data import main
 
 
 class Command(BaseCommand):

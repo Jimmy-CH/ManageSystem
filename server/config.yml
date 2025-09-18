@@ -17,11 +17,11 @@ development:
 
   # Redis 配置 (用于缓存和 Celery)
   redis:
-    host: 10.130.18.74           # Redis 服务器地址
+    host: 10.130.18.74         # Redis 服务器地址
     port: 6379                 # Redis 默认端口
-    password: "123456"               # 如果 Redis 有密码，填在这里
+    password: "123456"         # 如果 Redis 有密码，填在这里
     db_cache: 0                # 用于 Django 缓存的 Redis DB
-    db_session: 11                # 用于 Django 缓存的 Redis DB
+    db_session: 11             # 用于 Django 缓存的 Redis DB
     db_temp: 12                # 用于 Django 缓存的 Redis DB
     db_celery_broker: 1        # 用于 Celery Broker 的 Redis DB
     db_celery_backend: 2       # 用于 Celery Result Backend 的 Redis DB

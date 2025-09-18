@@ -8,6 +8,25 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings') # ← 替换 
 django.setup()
 
 from users.models import CustomPermission, Role, User  # 👈 替换 your_app
+from events.models import SLAStandard, Incident, Fault
+
+
+def clear_sla():
+    count = SLAStandard.objects.all().count()
+    SLAStandard.objects.all().delete()
+    print(f"🗑️  已删除 {count} 个 SLA 标准")
+
+
+def clear_incidents():
+    count = Incident.objects.all().count()
+    Incident.objects.all().delete()
+    print(f"🗑️  已删除 {count} 个事件")
+
+
+def clear_faults():
+    count = Fault.objects.all().count()
+    Fault.objects.all().delete()
+    print(f"🗑️  已删除 {count} 个故障")
 
 
 def clear_permissions():
@@ -37,6 +56,9 @@ def clear_users(keep_superusers=True):
 @transaction.atomic
 def main(clear_perms=True, clear_roles_flag=True, clear_users_flag=True, keep_superusers=True):
     print("⚠️  准备清空数据，请确认操作...")
+    clear_sla()
+    clear_incidents()
+    clear_faults()  # 注意顺序：先删子表 Fault，再删主表 Incident（Django 外键级联已处理，顺序不强制）
     if clear_perms:
         clear_permissions()
     if clear_roles_flag:
