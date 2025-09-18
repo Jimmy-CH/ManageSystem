@@ -17,7 +17,7 @@ from .serializers import (
 from .filters import IncidentFilter, FaultFilter, CategoryFilter
 from django.utils import timezone
 from .permissions import IncidentPermission
-from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Q
+from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Q, Prefetch
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 
 
@@ -32,8 +32,18 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='tree')
     def tree_view(self, request):
-        """返回树形结构数据（递归）"""
-        roots = Category.objects.filter(parent__isnull=True).order_by('order', 'id')
+        categories = Category.objects.select_related('parent').prefetch_related(
+            Prefetch('children', queryset=Category.objects.order_by('order', 'id'))
+        ).order_by('order', 'id')
+
+        cat_map = {cat.id: cat for cat in categories}
+        for cat in categories:
+            cat._children_list = []
+        for cat in categories:
+            if cat.parent_id in cat_map:
+                cat_map[cat.parent_id]._children_list.append(cat)
+
+        roots = [cat for cat in categories if cat.parent_id is None]
         serializer = CategoryTreeSerializer(roots, many=True)
         return Response(serializer.data)
 

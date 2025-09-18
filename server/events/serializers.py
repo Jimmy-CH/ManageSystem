@@ -94,11 +94,19 @@ class IncidentCreateUpdateSerializer(serializers.ModelSerializer):
         ]
 
 
-class CategoryTreeSerializer(serializers.Serializer):
-    """用于返回前端树形结构"""
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    level = serializers.IntegerField()
-    parent_id = serializers.IntegerField(source='parent.id', allow_null=True)
-    full_path_name = serializers.CharField()
-    children = serializers.ListField(child=serializers.DictField(), required=False)
+class CategoryTreeSerializer(serializers.ModelSerializer):
+    parent_id = serializers.IntegerField(source='parent.id', read_only=True, allow_null=True)
+    full_path_name = serializers.CharField(source='get_full_path_name', read_only=True)  # ✅ 绑定方法
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'level', 'parent_id', 'full_path_name', 'children', 'order', 'is_active']
+
+    def get_children(self, obj):
+        if hasattr(obj, '_children_list'):
+            # 使用预构建的子节点（推荐）
+            return CategoryTreeSerializer(obj._children_list, many=True).data
+        else:
+            # 降级方案：查询数据库（有N+1风险）
+            return CategoryTreeSerializer(obj.children.all(), many=True).data
