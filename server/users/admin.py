@@ -1,18 +1,43 @@
-
 from django.contrib import admin
-from .models import CustomPermission, User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 
+User = get_user_model()
 
-@admin.register(CustomPermission)
-class CustomPermissionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'codename', 'category')
-    list_filter = ('category',)
+# ⚠️ 强制取消默认注册（如果之前被注册过）
+if admin.site.is_registered(User):
+    admin.site.unregister(User)
 
-
+# ✅ 重新注册
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    # 继承默认 UserAdmin，保留所有功能
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups')
-    fieldsets = UserAdmin.fieldsets
+    list_display = [
+        'username',
+        'phone',
+        'department',
+        'position',
+        'status',
+        'is_staff',
+        'is_superuser',
+        'is_active'
+    ]
+    list_filter = ['status', 'is_staff', 'is_superuser', 'is_active', 'department']
+    search_fields = ['username', 'phone', 'department', 'position']
+    ordering = ['-id']
+
+    fieldsets = UserAdmin.fieldsets + (
+        ('扩展信息', {
+            'fields': ('phone', 'avatar', 'department', 'position', 'status', 'importance')
+        }),
+        ('角色权限', {
+            'fields': ('roles',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('扩展信息', {
+            'classes': ('wide',),
+            'fields': ('phone', 'department', 'position', 'status', 'importance'),
+        }),
+    )

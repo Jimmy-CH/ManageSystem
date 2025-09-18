@@ -127,7 +127,6 @@ export default {
     async getList() {
       this.listLoading = true
       const { data } = await getPermissions(this.listQuery)
-      console.log(data)
       const items = data
       this.list = items.map(v => {
         this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
