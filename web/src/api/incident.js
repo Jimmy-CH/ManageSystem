@@ -34,5 +34,12 @@ export const incidentApi = {
       url: `/events/incidents/${id}/`,
       method: 'delete'
     })
+  },
+  // ✅ 新增：获取事件关联的故障列表
+  getFaults(incidentId) {
+    return request({
+      url: `/events/incidents/${incidentId}/faults/`,
+      method: 'get'
+    })
   }
 }

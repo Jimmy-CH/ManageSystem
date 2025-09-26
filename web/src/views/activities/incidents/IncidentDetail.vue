@@ -2,12 +2,12 @@
   <el-card>
     <h2>{{ incident.title }}</h2>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="分类">{{ incident.category?.name || '无' }}</el-descriptions-item>
-      <el-descriptions-item label="优先级">P{{ incident.priority }}</el-descriptions-item>
+      <el-descriptions-item label="分类">{{ incident.category_name || '无' }}</el-descriptions-item>
+      <el-descriptions-item label="优先级">{{ incident.priority_display || `P${incident.priority}` }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ statusMap[incident.status] }}</el-descriptions-item>
       <el-descriptions-item label="发生时间">{{ formatDate(incident.occurred_at) }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatDate(incident.created_at) }}</el-descriptions-item>
-      <el-descriptions-item label="SLA">{{ incident.sla?.level_name || '无' }}</el-descriptions-item>
+      <el-descriptions-item label="SLA">{{ incident.sla_level || '无' }}</el-descriptions-item>
     </el-descriptions>
 
     <h3 style="margin-top: 20px">事件描述</h3>
@@ -34,7 +34,12 @@
 import { incidentApi } from '@/api/incident'
 
 export default {
-  props: ['id'],
+  props: {
+    id: {
+      type: String,
+      default: null
+    }
+  },
   data() {
     return {
       incident: {},
@@ -43,16 +48,27 @@ export default {
     }
   },
   async created() {
-    const [incidentRes, faultRes] = await Promise.all([
-      incidentApi.detail(this.id),
-      incidentApi.getFaults(this.id)
-    ])
-    this.incident = incidentRes.data
-    this.faults = faultRes.data
+    try {
+      const [incidentRes, faultRes] = await Promise.all([
+        incidentApi.detail(this.id),
+        incidentApi.getFaults(this.id)
+      ])
+      this.incident = incidentRes.data
+      this.faults = faultRes.data || []
+    } catch (err) {
+      console.error('加载事件详情失败:', err)
+      this.$message.error('加载失败')
+    }
   },
   methods: {
     formatDate(date) {
-      return date ? new Date(date).toLocaleString() : ''
+      return date ? new Date(date).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : ''
     }
   }
 }

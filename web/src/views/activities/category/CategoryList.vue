@@ -2,7 +2,7 @@
   <el-card>
     <div slot="header">
       <span>分类管理</span>
-      <el-button style="float:right" type="primary" @click="dialogVisible = true">新增分类</el-button>
+      <el-button style="float:right" type="primary" @click="handleAdd">新增分类</el-button>
     </div>
 
     <el-tree
@@ -57,22 +57,26 @@ export default {
   data() {
     return {
       treeData: [],
+      cascaderOptions: [],
+      flatList: [], // 👈 新增：用于快速查找路径
       dialogVisible: false,
       isEdit: false,
-      form: { name: '', parent: null, order: 0, is_active: true },
-      rules: { name: [{ required: true, message: '请输入名称' }] },
-      cascaderOptions: []
+      form: {
+        name: '',
+        parent: [], // 👈 必须是数组，供 cascader 使用
+        order: 0,
+        is_active: true
+      },
+      rules: {
+        name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
+      }
     }
   },
   async created() {
     await this.fetchData()
   },
   methods: {
-    async fetchData() {
-      const res = await categoryApi.list()
-      this.treeData = this.buildTree(res.data.results || [])
-      this.cascaderOptions = this.buildTreeForCascader(res.data.results || [])
-    },
+    // 通用构建树方法（用于 tree 和 cascader）
     buildTree(list, parentId = null) {
       return list
         .filter(item => item.parent === parentId)
@@ -81,55 +85,108 @@ export default {
           children: this.buildTree(list, item.id)
         }))
     },
-    buildTreeForCascader(list) {
-      const map = {}
-      list.forEach(item => {
-        map[item.id] = { ...item, children: [] }
-      })
-      const roots = []
-      list.forEach(item => {
-        if (item.parent) {
-          if (map[item.parent]) map[item.parent].children.push(map[item.id])
-        } else {
-          roots.push(map[item.id])
-        }
-      })
-      return roots
-    },
-    async submitForm() {
-      // 关键修复：将 [] 转为 null
-      const payload = {
-        ...this.form,
-        parent: Array.isArray(this.form.parent) && this.form.parent.length > 0
-          ? this.form.parent[this.form.parent.length - 1] // 取最后一级 ID（级联选择）
-          : null
-      }
 
-      // 如果你的 cascader 是单选（非级联路径），可能直接是 [id] 或 []
-      // 更简单的方式（如果你只选一个节点）：
-      // parent: this.form.parent && this.form.parent.length ? this.form.parent[0] : null
+    // 根据 parent ID 构建路径 [rootId, ..., parentId]
+    findPathById(targetId) {
+      if (!targetId) return []
+      const idMap = {}
+      this.flatList.forEach(item => {
+        idMap[item.id] = item
+      })
+
+      const path = []
+      let current = targetId
+      while (current) {
+        const node = idMap[current]
+        if (!node) break
+        path.unshift(current)
+        current = node.parent // 继续向上找
+      }
+      return path
+    },
+
+    async fetchData() {
       try {
-        if (this.isEdit) {
-          await categoryApi.update(this.form.id, payload)
-        } else {
-          await categoryApi.create(payload)
-        }
-        this.$message.success('操作成功')
-        this.dialogVisible = false
-        this.fetchData()
+        const res = await categoryApi.list()
+        // 兼容分页（DRF）和非分页
+        const list = Array.isArray(res.data)
+          ? res.data
+          : (res.data?.results || [])
+
+        this.flatList = list
+        this.treeData = this.buildTree(list)
+        this.cascaderOptions = this.buildTree(list) // ✅ 直接复用 buildTree
       } catch (err) {
-        this.$message.error('操作失败')
+        console.error('获取分类失败:', err)
+        this.$message.error('加载分类失败')
       }
     },
-    editCategory(data) {
-      this.isEdit = true
-      this.form = { ...data, parent: data.parent || null }
+
+    handleAdd() {
+      this.isEdit = false
+      this.form = {
+        name: '',
+        parent: [], // 空数组，cascader 可识别
+        order: 0,
+        is_active: true
+      }
       this.dialogVisible = true
     },
+
+    editCategory(data) {
+      this.isEdit = true
+      // 👇 关键：将 parent ID 转为路径数组
+      const parentPath = data.parent ? this.findPathById(data.parent) : []
+      this.form = {
+        ...data,
+        parent: parentPath // cascader 需要数组
+      }
+      this.dialogVisible = true
+    },
+
+    async submitForm() {
+      this.$refs.form.validate(async(valid) => {
+        if (!valid) return
+
+        // 👇 从路径数组中提取父级 ID（最后一个）
+        const parentId = this.form.parent?.length
+          ? this.form.parent[this.form.parent.length - 1]
+          : null
+
+        const payload = {
+          name: this.form.name,
+          parent: parentId, // ✅ 提交 ID 或 null
+          order: this.form.order,
+          is_active: this.form.is_active
+        }
+
+        try {
+          if (this.isEdit) {
+            await categoryApi.update(this.form.id, payload)
+          } else {
+            await categoryApi.create(payload)
+          }
+          this.$message.success(this.isEdit ? '更新成功' : '新增成功')
+          this.dialogVisible = false
+          await this.fetchData()
+        } catch (err) {
+          const msg = err?.response?.data?.message || '操作失败'
+          this.$message.error(msg)
+        }
+      })
+    },
+
     async deleteCategory(id) {
-      await this.$confirm('确定删除？')
-      await categoryApi.delete(id)
-      this.fetchData()
+      try {
+        await this.$confirm('确定删除该分类？', '提示', { type: 'warning' })
+        await categoryApi.delete(id)
+        this.$message.success('删除成功')
+        await this.fetchData()
+      } catch (err) {
+        if (err !== 'cancel') {
+          this.$message.error('删除失败')
+        }
+      }
     }
   }
 }

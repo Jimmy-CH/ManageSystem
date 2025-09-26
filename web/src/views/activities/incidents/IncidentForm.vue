@@ -16,7 +16,12 @@
       </el-form-item>
       <el-form-item label="优先级" prop="priority">
         <el-select v-model="form.priority">
-          <el-option v-for="p in [1,2,3,4]" :key="p" :label="`P${p}`" :value="p" />
+          <el-option
+            v-for="opt in priorityOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="发生时间" prop="occurred_at">
@@ -40,10 +45,16 @@
 
 <script>
 import { incidentApi } from '@/api/incident'
+import { categoryApi } from '@/api/category' // ✅ 新增导入
 import moment from 'moment'
 
 export default {
-  props: ['id'],
+  props: {
+    id: {
+      type: String,
+      default: null
+    }
+  },
   data() {
     return {
       isEdit: !!this.id,
@@ -58,25 +69,66 @@ export default {
         title: [{ required: true, message: '请输入标题' }],
         description: [{ required: true, message: '请输入描述' }]
       },
-      categoryOptions: []
+      categoryOptions: [],
+      // data 中添加
+      priorityOptions: [
+        { value: 1, label: '低' },
+        { value: 2, label: '中' },
+        { value: 3, label: '高' },
+        { value: 4, label: '紧急' }
+      ]
     }
   },
   async created() {
-    const res = await incidentApi.getCategories()
-    this.categoryOptions = this.buildTree(res.data)
+    try {
+      // ✅ 使用 categoryApi 而不是 incidentApi.getCategories
+      const res = await categoryApi.list()
+      this.categoryOptions = this.buildTree(res.data.results || [])
 
-    if (this.isEdit) {
-      const detail = await incidentApi.detail(this.id)
-      const data = detail.data
-      this.form = {
-        title: data.title,
-        category: data.category?.id || null,
-        priority: data.priority,
-        occurred_at: moment(data.occurred_at).format('YYYY-MM-DD HH:mm:ss'),
-        description: data.description
+      if (this.isEdit) {
+        const detail = await incidentApi.detail(this.id)
+        const data = detail.data
+        this.form = {
+          title: data.title,
+          // 注意：cascader 的 v-model 是数组，但你传的是单个 ID？
+          category: data.category ? [data.category] : null, // 👈 修正点
+          priority: data.priority,
+          occurred_at: moment(data.occurred_at).format('YYYY-MM-DD HH:mm:ss'),
+          description: data.description
+        }
       }
+    } catch (err) {
+      console.error('加载数据失败:', err)
+      this.$message.error('初始化表单失败')
     }
   },
+  // async created() {
+  //   try {
+  //     const res = await categoryApi.list()
+  //     this.categoryOptions = this.buildTree(res.data.results || [])
+
+  //     if (this.isEdit) {
+  //       const detail = await incidentApi.detail(this.id)
+  //       const data = detail.data
+
+  //       // 确保 category 是 ID（兼容对象或 ID）
+  //       const categoryId = data.category
+  //         ? (typeof data.category === 'object' ? data.category.id : data.category)
+  //         : null
+
+  //       this.form = {
+  //         title: data.title,
+  //         category: categoryId ? [categoryId] : null,
+  //         priority: data.priority,
+  //         occurred_at: moment(data.occurred_at).format('YYYY-MM-DD HH:mm:ss'),
+  //         description: data.description
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error('加载数据失败:', err)
+  //     this.$message.error('初始化表单失败')
+  //   }
+  // },
   methods: {
     buildTree(list, parentId = null) {
       return list
@@ -90,9 +142,14 @@ export default {
       this.$refs.form.validate(async valid => {
         if (!valid) return
 
+        // 注意：el-cascader 的值是数组，如 [1, 2]，但后端只需要最终叶子节点 ID
+        const categoryId = Array.isArray(this.form.category)
+          ? this.form.category[this.form.category.length - 1]
+          : null
+
         const payload = {
           ...this.form,
-          category: this.form.category || null
+          category: categoryId // 传单个 ID 给后端
         }
 
         try {
@@ -102,7 +159,7 @@ export default {
             await incidentApi.create(payload)
           }
           this.$message.success('操作成功')
-          this.$router.push('/incidents')
+          this.$router.push('/activity/incident')
         } catch (err) {
           this.$message.error('操作失败')
         }
@@ -111,3 +168,4 @@ export default {
   }
 }
 </script>
+

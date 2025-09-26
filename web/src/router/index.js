@@ -110,6 +110,23 @@ export const constantRoutes = [
         component: () => import('@/views/activities/standard/SLAList.vue'),
         name: 'Standard',
         meta: { title: '时效信息', icon: 'tree' }
+      },
+      { path: '/incidents/create', component: () => import('@/views/activities/incidents/IncidentForm.vue'),
+        name: 'IncidentCreate',
+        meta: { title: '创建事件', icon: 'tree' },
+        hidden: true
+      },
+      { path: '/incidents/:id', component: () => import('@/views/activities/incidents/IncidentDetail.vue'),
+        name: 'IncidentDetail',
+        meta: { title: '事件详情', icon: 'tree' },
+        props: true,
+        hidden: true
+      },
+      { path: '/incidents/:id/edit', component: () => import('@/views/activities/incidents/IncidentForm.vue'),
+        name: 'IncidentEdit',
+        meta: { title: '修改事件', icon: 'tree' },
+        props: true,
+        hidden: true
       }
     ]
   },

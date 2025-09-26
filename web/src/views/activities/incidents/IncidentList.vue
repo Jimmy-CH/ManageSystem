@@ -25,13 +25,9 @@
 
       <!-- 表格 -->
       <el-table v-loading="loading" :data="tableData" style="width: 100%">
-        <el-table-column prop="title" label="标题" width="200" />
-        <el-table-column prop="category.name" label="分类" />
-        <el-table-column prop="get_priority_display" label="优先级">
-          <template slot-scope="scope">
-            {{ priorityMap[scope.row.priority] }}
-          </template>
-        </el-table-column>
+        <el-table-column prop="title" label="标题" width="300" />
+        <el-table-column prop="category_name" label="分类" /> <!-- ✅ 修正 -->
+        <el-table-column prop="priority_display" label="优先级" /> <!-- ✅ 直接使用 -->
         <el-table-column prop="status" label="状态">
           <template slot-scope="scope">
             {{ statusMap[scope.row.status] }}
@@ -47,7 +43,7 @@
             {{ formatDate(scope.row.occurred_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="240">
           <template slot-scope="scope">
             <el-button size="mini" @click="handleView(scope.row.id)">详情</el-button>
             <el-button size="mini" type="primary" @click="handleEdit(scope.row.id)">编辑</el-button>
@@ -88,7 +84,7 @@ export default {
         { value: 2, label: '已解决' },
         { value: 3, label: '已关闭' }
       ],
-      priorityMap: { 1: 'P1', 2: 'P2', 3: 'P3', 4: 'P4' },
+      // priorityMap 不再需要（因为后端直接返回 priority_display）
       statusMap: { 0: '待处理', 1: '处理中', 2: '已解决', 3: '已关闭' }
     }
   },
