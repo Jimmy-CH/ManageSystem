@@ -78,6 +78,16 @@ class IncidentViewSet(viewsets.ModelViewSet):
             return IncidentDetailSerializer
         return IncidentCreateUpdateSerializer
 
+    @action(detail=True, methods=['get'], url_path='faults')
+    def faults(self, request, pk=None):
+        """
+        获取指定事件下的所有故障列表
+        """
+        incident = self.get_object()  # 自动处理权限和404
+        faults = incident.faults.all()
+        serializer = FaultSerializer(faults, many=True, context={'request': request})
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'], url_path='respond')
     def mark_responded(self, request, pk=None):
         """快速标记为已响应"""
