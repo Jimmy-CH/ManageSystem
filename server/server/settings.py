@@ -46,7 +46,6 @@ except KeyError:
 SECRET_KEY = env_config['secret_key']
 DEBUG = env_config['debug']
 print(f"Current Environment: {ENVIRONMENT}")
-print(f"Current DEBUG: {DEBUG}")
 # 数据库 (MySQL)
 DATABASES = {
     'default': {

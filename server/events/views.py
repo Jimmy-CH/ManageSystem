@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import openpyxl
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
@@ -18,7 +20,7 @@ from .filters import IncidentFilter, FaultFilter, CategoryFilter
 from django.utils import timezone
 from .permissions import IncidentPermission
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Q, Prefetch
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+from datetime import timedelta
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -141,29 +143,54 @@ class IncidentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='statistics/trend')
     def incident_trend(self, request):
-        """近30天事件趋势（按天）"""
-        from django.utils import timezone
-        from datetime import timedelta
+        """
+        返回最近30天每天发生的事件数量（按用户本地时区统计）
+        字段：occurred_at（DateTimeField，可能为 None）
+        """
+        # 1. 确定本地时区的日期范围
+        now_local = timezone.localtime(timezone.now())
+        end_date = now_local.date()  # 今天（本地）
+        start_date = end_date - timedelta(days=29)  # 包含今天共30天
 
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        # 2. 计算 UTC 时间范围（用于高效数据库过滤）
+        #    避免拉取全表数据
+        utc_start = timezone.make_aware(
+            timezone.datetime.combine(start_date, timezone.datetime.min.time()),
+            timezone.get_default_timezone()
+        )
+        utc_start = utc_start.astimezone(timezone.utc)
 
-        data = self.queryset.filter(
-            created_at__gte=start_date, created_at__lte=end_date
-        ).annotate(
-            date=TruncDay('created_at')
-        ).values('date').annotate(
-            count=Count('id')
-        ).order_by('date')
+        utc_end = timezone.make_aware(
+            timezone.datetime.combine(end_date, timezone.datetime.max.time()),
+            timezone.get_default_timezone()
+        )
+        utc_end = utc_end.astimezone(timezone.utc)
 
-        # 补全缺失日期
+        # 3. 从数据库拉取可能相关的记录（带时区的 occurred_at）
+        raw_datetimes = self.queryset.filter(
+            occurred_at__isnull=False,
+            occurred_at__gte=utc_start,
+            occurred_at__lte=utc_end
+        ).values_list('occurred_at', flat=True)
+
+        # 4. 在 Python 中按本地日期分组
+        count_by_date = defaultdict(int)
+        local_tz = timezone.get_current_timezone()
+
+        for dt in raw_datetimes:
+            # 转为本地时间并提取日期
+            local_date = dt.astimezone(local_tz).date()
+            # 只统计在 [start_date, end_date] 范围内的
+            if start_date <= local_date <= end_date:
+                count_by_date[local_date] += 1
+
+        # 5. 补全缺失日期（连续30天）
         result = []
         current = start_date
-        data_dict = {item['date'].date(): item['count'] for item in data}
         while current <= end_date:
             result.append({
-                "date": current.date(),
-                "count": data_dict.get(current.date(), 0)
+                "date": current.isoformat(),  # 转为字符串，前端友好
+                "count": count_by_date.get(current, 0)
             })
             current += timedelta(days=1)
 
