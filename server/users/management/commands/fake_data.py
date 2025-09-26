@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from scripts.generate_fake_data import main  # 假设脚本放在 scripts/ 下
+from scripts.generate_user_data import main
 
 
 class Command(BaseCommand):
@@ -8,3 +8,4 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         main()
         self.stdout.write(self.style.SUCCESS('🎉 假数据生成完成！'))
+

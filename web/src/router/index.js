@@ -7,8 +7,8 @@ Vue.use(Router)
 import Layout from '@/layout'
 
 /* Router Modules */
-import nestedRouter from './modules/nested'
-import tableRouter from './modules/table'
+// import nestedRouter from './modules/nested'
+// import tableRouter from './modules/table'
 
 /**
  * Note: sub-menu only appear when route children.length >= 1
@@ -62,55 +62,78 @@ export const constantRoutes = [
   {
     path: '/profile',
     component: Layout,
-    redirect: '/profile/user/index',
+    redirect: '/profile/user',
     name: 'Profile',
     meta: { title: '用户中心', icon: 'user' },
     children: [
       {
-        path: 'user/index',
+        path: 'user',
         component: () => import('@/views/profile/user/index'),
         name: 'UserProfile',
         meta: { title: '用户信息', icon: 'user' }
       },
       {
-        path: 'role/index',
+        path: 'role',
         component: () => import('@/views/profile/role/index'),
         name: 'RoleProfile',
         meta: { title: '角色信息', icon: 'user' }
       },
       {
-        path: 'permission/index',
+        path: 'permission',
         component: () => import('@/views/profile/permission/index'),
         name: 'PermissionProfile',
         meta: { title: '权限信息', icon: 'user' }
       }
     ]
   },
-
   {
-    path: '/example',
+    path: '/activity',
     component: Layout,
-    redirect: '/example/tree',
-    name: 'Example',
-    meta: { title: 'Example', icon: 'el-icon-s-help' },
+    redirect: '/activity/incident',
+    name: 'Activity',
+    meta: { title: '事件管理', icon: 'el-icon-s-help' },
     children: [
-      // {
-      //   path: 'table',
-      //   name: 'Table',
-      //   component: () => import('@/views/table/index'),
-      //   meta: { title: 'Table', icon: 'table' }
-      // },
       {
-        path: 'tree',
-        name: 'Tree',
-        component: () => import('@/views/tree/index'),
-        meta: { title: 'Tree', icon: 'tree' }
+        path: 'category',
+        component: () => import('@/views/activities/category/CategoryList.vue'),
+        name: 'Category',
+        meta: { title: '分类信息', icon: 'tree' }
+      },
+      {
+        path: 'incident',
+        component: () => import('@/views/activities/incidents/IncidentList.vue'),
+        name: 'Incident',
+        meta: { title: '事件信息', icon: 'tree' }
+      },
+      {
+        path: 'standard',
+        component: () => import('@/views/activities/standard/SLAList.vue'),
+        name: 'Standard',
+        meta: { title: '时效信息', icon: 'tree' }
+      },
+      { path: '/incidents/create', component: () => import('@/views/activities/incidents/IncidentForm.vue'),
+        name: 'IncidentCreate',
+        meta: { title: '创建事件', icon: 'tree' },
+        hidden: true
+      },
+      { path: '/incidents/:id', component: () => import('@/views/activities/incidents/IncidentDetail.vue'),
+        name: 'IncidentDetail',
+        meta: { title: '事件详情', icon: 'tree' },
+        props: true,
+        hidden: true
+      },
+      { path: '/incidents/:id/edit', component: () => import('@/views/activities/incidents/IncidentForm.vue'),
+        name: 'IncidentEdit',
+        meta: { title: '修改事件', icon: 'tree' },
+        props: true,
+        hidden: true
       }
     ]
   },
+
   /** when your routing map is too long, you can split it into small modules **/
-  tableRouter,
-  nestedRouter,
+  // tableRouter,
+  // nestedRouter,
   {
     path: '/form',
     component: Layout,

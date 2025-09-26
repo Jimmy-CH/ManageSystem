@@ -1,10 +1,13 @@
-# urls.py
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from events.views import CategoryViewSet
+from . import views
 
 router = DefaultRouter()
-router.register(r'category', CategoryViewSet, basename='category')
+router.register(r'categories', views.CategoryViewSet)
+router.register(r'sla-standards', views.SLAStandardViewSet)
+router.register(r'incidents', views.IncidentViewSet)
+router.register(r'faults', views.FaultViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

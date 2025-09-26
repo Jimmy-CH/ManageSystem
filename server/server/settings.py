@@ -46,7 +46,6 @@ except KeyError:
 SECRET_KEY = env_config['secret_key']
 DEBUG = env_config['debug']
 print(f"Current Environment: {ENVIRONMENT}")
-print(f"Current DEBUG: {DEBUG}")
 # 数据库 (MySQL)
 DATABASES = {
     'default': {
@@ -138,6 +137,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'events',
     'system',
+    'channels',
 ]
 
 # DRF
@@ -213,7 +213,25 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'server.wsgi.application'
+# Channels 配置 ASGI 应用程序
+ASGI_APPLICATION = 'server.asgi.application'
 
+# 开发可用内存层（生产请用 Redis）
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+# 生产环境建议使用 Redis：
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [("127.0.0.1", 6379)],
+#         },
+#     },
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
