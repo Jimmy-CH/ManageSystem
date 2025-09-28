@@ -50,7 +50,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class SLAStandardViewSet(viewsets.ReadOnlyModelViewSet):
+class SLAStandardViewSet(viewsets.ModelViewSet):
     permission_classes = [IncidentPermission]  # 添加权限控制
     queryset = SLAStandard.objects.all()
     serializer_class = SLAStandardSerializer

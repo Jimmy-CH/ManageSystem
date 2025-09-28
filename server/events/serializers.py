@@ -35,6 +35,7 @@ class SLAStandardSerializer(serializers.ModelSerializer):
             'id', 'level_name', 'priority', 'priority_display',
             'response_time', 'resolve_time', 'description'
         ]
+        read_only_fields = ['id']
 
 
 class FaultSerializer(serializers.ModelSerializer):
