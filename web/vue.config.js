@@ -36,8 +36,6 @@ module.exports = {
       warnings: false,
       errors: true
     },
-    // before: require('./mock/mock-server.js'),
-    // 👇 添加代理配置
     proxy: {
       '/api': {
         target: 'http://localhost:8020', // 你的本地后端地址

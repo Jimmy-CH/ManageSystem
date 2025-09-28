@@ -114,10 +114,6 @@ export default {
     await this.loadAllStats()
     this.renderTrendChart()
   },
-  // mounted() {
-  //   console.log('incidentApi:', incidentApi) // 👈 看控制台输出是不是 undefined
-  //   this.loadAllStats()
-  // },
   methods: {
     async loadAllStats() {
       try {
