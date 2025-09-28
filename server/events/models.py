@@ -129,32 +129,6 @@ class Incident(BaseModel):
         expected = self.created_at + timezone.timedelta(hours=self.sla.resolve_time)
         return timezone.now() > expected
 
-        # 👇 缓存旧值
-
-    _original_responded_at = None
-    _original_resolved_at = None
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # 初始化时缓存当前值
-        self._original_responded_at = self.responded_at
-        self._original_resolved_at = self.resolved_at
-
-    def save(self, *args, **kwargs):
-        # 判断字段是否变更
-        is_responded = (self.responded_at is not None) and (self._original_responded_at is None)
-        is_resolved = (self.resolved_at is not None) and (self._original_resolved_at is None)
-
-        super().save(*args, **kwargs)
-
-        # 触发信号或直接调用推送（推荐用信号）
-        from .signals import handle_incident_update
-        handle_incident_update(self, is_responded, is_resolved)
-
-        # 更新缓存
-        self._original_responded_at = self.responded_at
-        self._original_resolved_at = self.resolved_at
-
 
 class Fault(BaseModel):
     incident = models.ForeignKey(

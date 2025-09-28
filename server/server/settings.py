@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 import yaml
+import platform
 from pathlib import Path
 from datetime import timedelta
 from django.core.exceptions import ImproperlyConfigured
@@ -33,20 +34,16 @@ def load_yaml_config():
         raise ImproperlyConfigured(f"Error parsing YAML config: {e}")
 
 
-# 加载配置
 config_data = load_yaml_config()
-
-# 获取当前环境的配置
 try:
     env_config = config_data[ENVIRONMENT]
 except KeyError:
     raise ImproperlyConfigured(f"Environment '{ENVIRONMENT}' not found in config.yml.")
 
-# 应用配置到 Django settings
 SECRET_KEY = env_config['secret_key']
 DEBUG = env_config['debug']
 print(f"Current Environment: {ENVIRONMENT}")
-# 数据库 (MySQL)
+
 DATABASES = {
     'default': {
         'ENGINE': env_config['database']['engine'],
@@ -59,7 +56,6 @@ DATABASES = {
     }
 }
 
-# 缓存 (Redis)
 REDIS_CONFIG = env_config['redis']
 CACHES = {
     'default': {
@@ -94,7 +90,6 @@ CACHES = {
     },
 }
 
-# --- Celery 配置 ---
 CELERY_BROKER_URL = env_config['celery']['broker_url'].format(
     password=REDIS_CONFIG['password'],
     host=REDIS_CONFIG['host'],
@@ -109,7 +104,6 @@ CELERY_RESULT_BACKEND = env_config['celery']['result_backend'].format(
     db=REDIS_CONFIG['db_celery_backend']
 )
 
-# 其他 Celery 设置 (可以直接定义或通过环境变量传递给 Celery)
 CELERY_TASK_ALWAYS_EAGER = env_config['celery']['task_always_eager']
 CELERY_TASK_SERIALIZER = env_config['celery']['task_serializer']
 CELERY_RESULT_SERIALIZER = env_config['celery']['result_serializer']
@@ -117,10 +111,7 @@ CELERY_ACCEPT_CONTENT = env_config['celery']['accept_content']
 CELERY_TIMEZONE = env_config['celery']['timezone']
 CELERY_ENABLE_UTC = env_config['celery']['enable_utc']
 
-# --- 其他 Django 设置 (保持不变或根据需要添加) ---
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -171,14 +162,18 @@ REST_FRAMEWORK = {
 
 # 媒体文件配置
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'  # 例如：项目根目录下的 media/ 文件夹
+if platform.system().lower() == 'windows':
+    MEDIA_ROOT = r'D:/media'
+else:
+    # 项目根目录下的 media/ 文件夹
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # JWT 配置（可选自定义）
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60*72),  # 访问 Token 有效期
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # 刷新 Token 有效期
-    'ROTATE_REFRESH_TOKENS': True,                   # 是否轮换刷新 Token
-    'BLACKLIST_AFTER_ROTATION': True,                # 刷新后旧 Token 是否加入黑名单
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),        # 刷新 Token 有效期
+    'ROTATE_REFRESH_TOKENS': True,                      # 是否轮换刷新 Token
+    'BLACKLIST_AFTER_ROTATION': True,                   # 刷新后旧 Token 是否加入黑名单
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -233,8 +228,6 @@ CHANNEL_LAYERS = {
 #     },
 # }
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -251,32 +244,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'zh-hans'  # 简体中文
 TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'static/'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# 日志目录（确保该目录存在且有写权限）
 LOGS_ROOT = Path(BASE_DIR / "logs")
-LOGS_ROOT.mkdir(exist_ok=True)  # 自动创建 logs 目录
-
-# 日志轮转大小（100MB）
-LOG_SIZE = 100 * 1024 * 1024  # 100MB
+LOGS_ROOT.mkdir(exist_ok=True)
+LOG_SIZE = 100 * 1024 * 1024  # 日志轮转大小（100MB）
 LOG_BACKUP_COUNT = 30  # 保留30个备份
 
 # 自定义日志格式
@@ -322,4 +301,4 @@ else:
         },
     }
 
-AUTH_USER_MODEL = 'users.User'  # 替换为你的应用名
+AUTH_USER_MODEL = 'users.User'
