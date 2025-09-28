@@ -35,11 +35,35 @@ export const incidentApi = {
       method: 'delete'
     })
   },
-  // ✅ 新增：获取事件关联的故障列表
   getFaults(incidentId) {
     return request({
       url: `/events/incidents/${incidentId}/faults/`,
       method: 'get'
     })
+  },
+  generalStatistics() {
+    return request({
+      url: '/events/incidents/statistics/general/',
+      method: 'get'
+    })
+  },
+  statsByCategory() {
+    return request({
+      url: '/events/incidents/statistics/by-category/',
+      method: 'get'
+    })
+  },
+  statsByPriority() {
+    return request({
+      url: '/events/incidents/statistics/by-priority/',
+      method: 'get'
+    })
+  },
+  incidentTrend() {
+    return request({
+      url: '/events/incidents/statistics/trend/',
+      method: 'get'
+    })
   }
 }
+
