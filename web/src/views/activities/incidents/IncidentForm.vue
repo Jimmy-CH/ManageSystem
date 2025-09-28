@@ -81,7 +81,6 @@ export default {
   },
   async created() {
     try {
-      // ✅ 使用 categoryApi 而不是 incidentApi.getCategories
       const res = await categoryApi.list()
       this.categoryOptions = this.buildTree(res.data.results || [])
 
@@ -91,7 +90,7 @@ export default {
         this.form = {
           title: data.title,
           // 注意：cascader 的 v-model 是数组，但你传的是单个 ID？
-          category: data.category ? [data.category] : null, // 👈 修正点
+          category: data.category ? [data.category] : null,
           priority: data.priority,
           occurred_at: moment(data.occurred_at).format('YYYY-MM-DD HH:mm:ss'),
           description: data.description
@@ -102,33 +101,6 @@ export default {
       this.$message.error('初始化表单失败')
     }
   },
-  // async created() {
-  //   try {
-  //     const res = await categoryApi.list()
-  //     this.categoryOptions = this.buildTree(res.data.results || [])
-
-  //     if (this.isEdit) {
-  //       const detail = await incidentApi.detail(this.id)
-  //       const data = detail.data
-
-  //       // 确保 category 是 ID（兼容对象或 ID）
-  //       const categoryId = data.category
-  //         ? (typeof data.category === 'object' ? data.category.id : data.category)
-  //         : null
-
-  //       this.form = {
-  //         title: data.title,
-  //         category: categoryId ? [categoryId] : null,
-  //         priority: data.priority,
-  //         occurred_at: moment(data.occurred_at).format('YYYY-MM-DD HH:mm:ss'),
-  //         description: data.description
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.error('加载数据失败:', err)
-  //     this.$message.error('初始化表单失败')
-  //   }
-  // },
   methods: {
     buildTree(list, parentId = null) {
       return list

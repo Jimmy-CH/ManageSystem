@@ -69,3 +69,89 @@ export function exportUsers(params) {
     responseType: 'blob' // ← 关键！下载文件
   })
 }
+
+export const permissionApi = {
+  list(params) {
+    return request({
+      url: '/users/permissions/',
+      method: 'get',
+      params
+    })
+  },
+  create(data) {
+    return request({
+      url: '/users/permissions/',
+      method: 'post',
+      data
+    })
+  },
+  update(id, data) {
+    return request({
+      url: `/users/permissions/${id}/`,
+      method: 'put',
+      data
+    })
+  },
+  detail(id) {
+    return request({
+      url: `/users/permissions/${id}/`,
+      method: 'get'
+    })
+  },
+  delete(id) {
+    return request({
+      url: `/users/permissions/${id}/`,
+      method: 'delete'
+    })
+  }
+}
+
+export const roleApi = {
+  list(params) {
+    return request({
+      url: '/users/roles/',
+      method: 'get',
+      params
+    })
+  },
+  create(data) {
+    return request({
+      url: '/users/roles/',
+      method: 'post',
+      data
+    })
+  },
+  update(id, data) {
+    return request({
+      url: `/users/roles/${id}/`,
+      method: 'put',
+      data
+    })
+  },
+  detail(id) {
+    return request({
+      url: `/users/roles/${id}/`,
+      method: 'get'
+    })
+  },
+  delete(id) {
+    return request({
+      url: `/users/roles/${id}/`,
+      method: 'delete'
+    })
+  },
+  permissions() {
+    return request({
+      url: `/users/permissions/all/`,
+      method: 'get'
+    })
+  },
+  export(params) {
+    return request({
+      url: '/users/roles/export/',
+      method: 'get',
+      params,
+      responseType: 'blob' // ← 关键！下载文件
+    })
+  }
+}

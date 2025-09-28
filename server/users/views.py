@@ -19,6 +19,7 @@ import pandas as pd
 from django.http import HttpResponse
 from django.utils import timezone
 from openpyxl.styles import Font, Alignment, PatternFill
+from django.utils.translation import gettext_lazy as _
 
 
 logger = logging.getLogger(__name__)
@@ -130,16 +131,61 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return super().update(request, *args, **kwargs)
 
+    @action(detail=True, methods=['patch'], url_path='avatar')
+    def upload_avatar(self, request, pk=None):
+        """
+        上传用户头像
+        - 仅允许用户修改自己的头像（或管理员）
+        - 接收 multipart/form-data，字段名为 avatar
+        """
+        user = self.get_object()
+
+        if user != request.user and not request.user.is_staff:
+            return Response(
+                {'error': _('无权修改该用户的头像')},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        avatar = request.FILES.get('avatar')
+        if not avatar:
+            return Response(
+                {'avatar': _('请上传头像文件')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not avatar.content_type.startswith('image/'):
+            return Response(
+                {'avatar': _('仅支持图片格式（jpg/png/gif等）')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if avatar.size > 5 * 1024 * 1024:
+            return Response(
+                {'avatar': _('头像文件不能超过 5MB')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 保存头像
+        user.avatar = avatar
+        user.save(update_fields=['avatar'])
+
+        # 返回头像 URL（确保是完整 URL）
+        avatar_url = user.avatar.url if user.avatar else None
+        if avatar_url and not avatar_url.startswith(('http://', 'https://')):
+            avatar_url = request.build_absolute_uri(avatar_url)
+
+        return Response({
+            'avatar': avatar_url
+        }, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['get'], url_path='export')
     def export(self, request):
         """
         使用 pandas + openpyxl 导出用户数据为 Excel
         支持过滤参数：?department=技术部&status=true
         """
-        # 1. 获取过滤后的数据
         queryset = self.filter_queryset(self.get_queryset())
 
-        # 2. 构建数据字典列表
         data = []
         for user in queryset:
             role_names = ", ".join(user.roles.values_list('name', flat=True)) if user.roles.exists() else ""
@@ -160,27 +206,21 @@ class UserViewSet(viewsets.ModelViewSet):
                 "更新时间": user.updated_at.strftime("%Y-%m-%d %H:%M:%S") if user.updated_at else "",
             })
 
-        # 3. 创建 DataFrame
         df = pd.DataFrame(data)
 
-        # 4. 如果无数据，返回空文件或提示
         if df.empty:
             return Response({"error": "无符合条件的数据"}, status=404)
 
-        # 5. 创建 Excel 响应
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         filename = f"用户数据_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         response['Content-Disposition'] = f'attachment; filename={filename}'
 
-        # 6. 用 pandas 写入 Excel（使用 openpyxl 引擎）
         with pd.ExcelWriter(response, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='用户数据', index=False, startrow=0, startcol=0)
 
-            # 7. 获取 workbook 和 worksheet 对象，用于样式设置
             workbook = writer.book
             worksheet = writer.sheets['用户数据']
 
-            # 8. 设置表头样式
             header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
             header_font = Font(color="FFFFFF", bold=True)
 
@@ -190,7 +230,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 cell.font = header_font
                 cell.alignment = Alignment(horizontal="center")
 
-            # 9. 自动调整列宽
             for col_num, column_title in enumerate(df.columns, 1):
                 column_letter = get_column_letter(col_num)
                 max_length = max(
@@ -224,7 +263,6 @@ class RegisterView(APIView):
             "message": "注册成功",
             "user": UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(TokenObtainPairView):
