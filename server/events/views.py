@@ -121,8 +121,9 @@ class IncidentViewSet(viewsets.ModelViewSet):
         avg_resolve_time = self.queryset.filter(
             resolved_at__isnull=False
         ).aggregate(
-            avg=Avg(ExpressionWrapper(F('resolved_at') - F('created_at'), output_field=DurationField()))
+            avg=Avg(ExpressionWrapper(F('resolved_at') - F('occurred_at'), output_field=DurationField()))
         )['avg']
+        print(avg_resolve_time)
 
         return Response({
             "total_incidents": total,
