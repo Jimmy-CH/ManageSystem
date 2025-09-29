@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import { slaApi } from '@/api/sla'
+import { slaApi } from '@/api/incident'
 
 export default {
   name: 'SLAStandardList',

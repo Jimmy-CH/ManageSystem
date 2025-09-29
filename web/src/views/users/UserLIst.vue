@@ -257,7 +257,7 @@
 </template>
 
 <script>
-import { getUsers, getUserRoles, createUser, updateUser, deleteUser, exportUsers } from '@/api/user'
+import { userApi } from '@/api/user'
 import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination'
 import Sortable from 'sortablejs'
@@ -342,7 +342,7 @@ export default {
     async getList() {
       this.listLoading = true
       try {
-        const response = await getUsers(this.listQuery)
+        const response = await userApi.list(this.listQuery)
         this.list = response.data.results || []
         this.total = response.data.count || 0
       } catch (error) {
@@ -395,7 +395,7 @@ export default {
       this.$refs['dataForm'].validate(async(valid) => {
         if (!valid) return
         try {
-          await createUser(this.temp)
+          await userApi.create(this.temp)
           this.$message.success('创建成功')
           this.dialogFormVisible = false
           this.getList()
@@ -432,7 +432,7 @@ export default {
           delete payload.password // 不更新密码
         }
         try {
-          await updateUser(payload.id, payload)
+          await userApi.update(payload.id, payload)
           this.$message.success('更新成功')
           this.dialogFormVisible = false
           this.getList()
@@ -446,7 +446,7 @@ export default {
       if (visible && !this.permissionLoaded) {
         this.selectLoading = true
         try {
-          const res = await getUserRoles()
+          const res = await userApi.roles()
           this.roleOptions = res.data.data || []
           this.permissionLoaded = true
         } catch (error) {
@@ -464,7 +464,7 @@ export default {
           type: 'warning',
           center: true
         })
-        await deleteUser(row.id)
+        await userApi.delete(row.id)
         this.$notify.success({ title: '成功', message: '删除成功', duration: 2000 })
         this.list.splice(index, 1)
       } catch (error) {
@@ -476,7 +476,7 @@ export default {
     async handleExport() {
       this.downloadLoading = true
       try {
-        const res = await exportUsers(this.listQuery)
+        const res = await userApi.export(this.listQuery)
         const url = window.URL.createObjectURL(new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
         const link = document.createElement('a')
         link.href = url

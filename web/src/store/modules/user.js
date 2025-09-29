@@ -7,7 +7,8 @@ const getDefaultState = () => {
     token: getToken(),
     name: '',
     avatar: '',
-    refresh: ''
+    refresh: '',
+    info: {}
   }
 }
 
@@ -28,6 +29,9 @@ const mutations = {
   },
   SET_REFRESH: (state, refresh) => {
     state.refresh = refresh
+  },
+  SET_INFO: (state, info) => {
+    state.info = info
   }
 }
 
@@ -59,11 +63,12 @@ const actions = {
         if (!data) {
           return reject('Verification failed, please Login again.')
         }
-
+        commit('SET_INFO', data)
         const { username, avatar } = data
-
         commit('SET_NAME', username)
-        commit('SET_AVATAR', avatar)
+        // 拼接完整的url
+        const avatar_url = `${process.env.VUE_APP_AVATAR_URL}${avatar.startsWith('/') ? '' : '/'}${avatar}`
+        commit('SET_AVATAR', avatar_url)
         resolve(data)
       }).catch(error => {
         reject(error)
