@@ -1,4 +1,15 @@
+import os
+import logging
+import pandas as pd
+from django.http import HttpResponse
+from django.utils import timezone
+from openpyxl.styles import Font, Alignment, PatternFill
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from openpyxl.utils import get_column_letter
+from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from django.db.models import Prefetch
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
@@ -10,16 +21,7 @@ from .filters import RoleFilter, UserFilter
 from .models import User, Role, CustomPermission
 from .serializers import UserSerializer, RoleSerializer, CustomPermissionSerializer, RegisterSerializer, \
     CustomTokenObtainPairSerializer
-from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema
-from django.db.models import Prefetch
 from utils import StandardResponse
-import logging
-import pandas as pd
-from django.http import HttpResponse
-from django.utils import timezone
-from openpyxl.styles import Font, Alignment, PatternFill
-from django.utils.translation import gettext_lazy as _
 
 
 logger = logging.getLogger(__name__)
@@ -131,52 +133,60 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return super().update(request, *args, **kwargs)
 
-    @action(detail=True, methods=['patch'], url_path='avatar')
+    @action(detail=True, methods=['post'], url_path='upload-avatar')
     def upload_avatar(self, request, pk=None):
         """
-        上传用户头像
-        - 仅允许用户修改自己的头像（或管理员）
-        - 接收 multipart/form-data，字段名为 avatar
+        上传头像：POST /users/{id}/upload-avatar/
+        请求体：multipart/form-data，字段名为 avatar
+        """
+        user = self.get_object()
+        avatar = request.FILES.get('avatar')
+
+        if not avatar:
+            return Response(
+                {'error': '请上传头像文件'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 可选：验证文件类型（如只允许图片）
+        if not avatar.content_type.startswith('image/'):
+            return Response(
+                {'error': '仅支持图片格式'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 删除旧头像（如果存在且不是默认头像）
+        if user.avatar:
+            old_path = user.avatar.path
+            if os.path.isfile(old_path):
+                default_storage.delete(old_path)
+
+        # 保存新头像
+        user.avatar.save(avatar.name, ContentFile(avatar.read()), save=True)
+
+        return Response(
+            {'avatar': user.avatar.url},
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['delete'], url_path='delete-avatar')
+    def delete_avatar(self, request, pk=None):
+        """
+        删除头像：DELETE /users/{id}/delete-avatar/
         """
         user = self.get_object()
 
-        if user != request.user and not request.user.is_staff:
-            return Response(
-                {'error': _('无权修改该用户的头像')},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if user.avatar:
+            # 删除文件系统中的文件
+            if default_storage.exists(user.avatar.name):
+                default_storage.delete(user.avatar.name)
+            # 清空模型字段
+            user.avatar.delete(save=True)
 
-        avatar = request.FILES.get('avatar')
-        if not avatar:
-            return Response(
-                {'avatar': _('请上传头像文件')},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not avatar.content_type.startswith('image/'):
-            return Response(
-                {'avatar': _('仅支持图片格式（jpg/png/gif等）')},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if avatar.size > 5 * 1024 * 1024:
-            return Response(
-                {'avatar': _('头像文件不能超过 5MB')},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 保存头像
-        user.avatar = avatar
-        user.save(update_fields=['avatar'])
-
-        # 返回头像 URL（确保是完整 URL）
-        avatar_url = user.avatar.url if user.avatar else None
-        if avatar_url and not avatar_url.startswith(('http://', 'https://')):
-            avatar_url = request.build_absolute_uri(avatar_url)
-
-        return Response({
-            'avatar': avatar_url
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {'message': '头像已删除'},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
     @action(detail=False, methods=['get'], url_path='export')
     def export(self, request):
@@ -241,11 +251,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 worksheet.column_dimensions[column_letter].width = adjusted_width
 
         return response
-
-    @action(detail=False, methods=['get'])
-    def me(self, request):
-        serializer = self.get_serializer(request.user)
-        return StandardResponse(data=serializer.data)
 
 
 class RegisterView(APIView):
