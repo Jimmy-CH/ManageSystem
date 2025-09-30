@@ -9,6 +9,7 @@ import Layout from '@/layout'
 /* Router Modules */
 import activityRouter from './modules/activityRouter'
 import tableRouter from './modules/usersRouter'
+import systemRouter from './modules/systemRouter'
 
 /**
  * Note: sub-menu only appear when route children.length >= 1
@@ -75,6 +76,7 @@ export const constantRoutes = [
   /** when your routing map is too long, you can split it into small modules **/
   tableRouter,
   activityRouter,
+  systemRouter,
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

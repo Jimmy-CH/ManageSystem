@@ -67,8 +67,6 @@
 import { incidentApi } from '@/api/incident'
 import moment from 'moment'
 import Pagination from '@/components/Pagination'
-// 假设 pagination 是全局注册组件，或已引入
-// import Pagination from '@/components/Pagination'
 
 export default {
   name: 'IncidentList',
@@ -118,7 +116,7 @@ export default {
     resetSearch() {
       this.listQuery = {
         page: 1,
-        limit: 10,
+        limit: 20,
         title: '',
         status: ''
       }
