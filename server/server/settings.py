@@ -151,7 +151,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',       # 搜索
         'rest_framework.filters.OrderingFilter',     # 排序
     ],
-    'EXCEPTION_HANDLER': 'common.custom_exception_handler',
+    # 'EXCEPTION_HANDLER': 'common.custom_exception_handler',
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',          # 统一日期时间格式
     'DATE_FORMAT': '%Y-%m-%d',                       # 日期格式
     'TIME_FORMAT': '%H:%M:%S',                       # 时间格式
@@ -210,23 +210,28 @@ TEMPLATES = [
 WSGI_APPLICATION = 'server.wsgi.application'
 # Channels 配置 ASGI 应用程序
 ASGI_APPLICATION = 'server.asgi.application'
-
-# 开发可用内存层（生产请用 Redis）
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+# ====== Django Channels (WebSocket) ======
+if DEBUG:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        }
     }
-}
-
-# 生产环境建议使用 Redis：
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             "hosts": [("127.0.0.1", 6379)],
-#         },
-#     },
-# }
+else:
+    # 生产环境建议使用 Redis：
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [{
+                    "address": (REDIS_CONFIG['host'], REDIS_CONFIG['port']),
+                    "password": REDIS_CONFIG.get('password'),
+                    "db": REDIS_CONFIG.get('db_channels', 2),  # 建议用不同 DB
+                    "retry_on_timeout": True,
+                }],
+            },
+        },
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [

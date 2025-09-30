@@ -17,12 +17,18 @@ class SystemConfigViewSet(viewsets.ModelViewSet):
 
 
 class MenuViewSet(viewsets.ModelViewSet):
-    queryset = Menu.objects.filter(parent__isnull=True)  # 只查根节点，子节点由序列化器递归
+    queryset = Menu.objects.all()
     serializer_class = MenuSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = MenuFilter
     search_fields = ['title']
     ordering_fields = ['order']
+
+    # 可选：在 list 时只返回根节点（前端自己递归展开）
+    def get_queryset(self):
+        if self.action == 'list':
+            return Menu.objects.filter(parent__isnull=True)
+        return Menu.objects.all()  # retrieve/update/destroy 需要完整 queryset
 
 
 class StorageConfigViewSet(viewsets.ModelViewSet):
