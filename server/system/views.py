@@ -24,7 +24,6 @@ class MenuViewSet(viewsets.ModelViewSet):
     search_fields = ['title']
     ordering_fields = ['order']
 
-    # 可选：在 list 时只返回根节点（前端自己递归展开）
     def get_queryset(self):
         if self.action == 'list':
             return Menu.objects.filter(parent__isnull=True)
