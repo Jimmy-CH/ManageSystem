@@ -135,8 +135,8 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'common.pagination.FrontendCompatiblePagination',
     'DEFAULT_RENDERER_CLASSES': [
-        'common.renderers.StandardJSONRenderer',  # 替换为你的路径
-        'rest_framework.renderers.JSONRenderer',     # 保留原生备用
+        'common.renderers.StandardJSONRenderer',
+        'rest_framework.renderers.JSONRenderer',          # 保留原生备用
         'rest_framework.renderers.BrowsableAPIRenderer',  # 开发用
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -148,16 +148,16 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',     # 搜索
-        'rest_framework.filters.OrderingFilter',   # 排序
+        'rest_framework.filters.SearchFilter',       # 搜索
+        'rest_framework.filters.OrderingFilter',     # 排序
     ],
     'EXCEPTION_HANDLER': 'common.custom_exception_handler',
-    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',  # 统一日期时间格式
-    'DATE_FORMAT': '%Y-%m-%d',  # 日期格式
-    'TIME_FORMAT': '%H:%M:%S',  # 时间格式
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',          # 统一日期时间格式
+    'DATE_FORMAT': '%Y-%m-%d',                       # 日期格式
+    'TIME_FORMAT': '%H:%M:%S',                       # 时间格式
 
-    'COERCE_DECIMAL_TO_STRING': False,  # 数字保持原格式
-    'UNICODE_JSON': True,  # 支持Unicode
+    'COERCE_DECIMAL_TO_STRING': False,               # 数字保持原格式
+    'UNICODE_JSON': True,                            # 支持Unicode
 }
 
 # 媒体文件配置
@@ -276,7 +276,7 @@ if DEBUG:
         },
     }
 else:
-    # 生产环境：只记录 ERROR 到文件，不打印到控制台
+    # 生产只记录 ERROR 到文件，不打印到控制台
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,

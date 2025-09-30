@@ -1,6 +1,10 @@
 <template>
   <div>
-    <svg-icon :icon-class="isFullscreen?'exit-fullscreen':'fullscreen'" @click="click" />
+    <svg-icon
+      :icon-class="isFullscreen ? 'exit-fullscreen' : 'fullscreen'"
+      class="screenfull-svg"
+      @click="toggleFullscreen"
+    />
   </div>
 </template>
 
@@ -21,27 +25,27 @@ export default {
     this.destroy()
   },
   methods: {
-    click() {
-      if (!screenfull.enabled) {
+    toggleFullscreen() {
+      if (!screenfull.isEnabled) {
         this.$message({
-          message: 'you browser can not work',
+          message: 'Fullscreen is not supported in your browser.',
           type: 'warning'
         })
-        return false
+        return
       }
       screenfull.toggle()
     },
-    change() {
+    onFullscreenChange() {
       this.isFullscreen = screenfull.isFullscreen
     },
     init() {
-      if (screenfull.enabled) {
-        screenfull.on('change', this.change)
+      if (screenfull.isEnabled) {
+        screenfull.on('change', this.onFullscreenChange)
       }
     },
     destroy() {
-      if (screenfull.enabled) {
-        screenfull.off('change', this.change)
+      if (screenfull.isEnabled) {
+        screenfull.off('change', this.onFullscreenChange)
       }
     }
   }
@@ -52,9 +56,9 @@ export default {
 .screenfull-svg {
   display: inline-block;
   cursor: pointer;
-  fill: #5a5e66;;
+  fill: #5a5e66;
   width: 20px;
   height: 20px;
-  vertical-align: 10px;
+  vertical-align: middle; /* 更推荐用 middle 而不是固定 10px */
 }
 </style>

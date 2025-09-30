@@ -8,17 +8,17 @@
       </div>
 
       <!-- 搜索条件 -->
-      <el-form :inline="true" :model="searchForm">
+      <el-form :inline="true" :model="listQuery">
         <el-form-item label="标题">
-          <el-input v-model="searchForm.title" placeholder="事件标题" />
+          <el-input v-model="listQuery.title" placeholder="事件标题" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" clearable placeholder="请选择">
+          <el-select v-model="listQuery.status" clearable placeholder="请选择">
             <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="fetchData">查询</el-button>
+          <el-button type="primary" @click="handleFilter">查询</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </el-form-item>
       </el-form>
@@ -26,8 +26,8 @@
       <!-- 表格 -->
       <el-table v-loading="loading" :data="tableData" style="width: 100%">
         <el-table-column prop="title" label="标题" width="300" />
-        <el-table-column prop="category_name" label="分类" /> <!-- ✅ 修正 -->
-        <el-table-column prop="priority_display" label="优先级" /> <!-- ✅ 直接使用 -->
+        <el-table-column prop="category_name" label="分类" />
+        <el-table-column prop="priority_display" label="优先级" />
         <el-table-column prop="status" label="状态">
           <template slot-scope="scope">
             {{ statusMap[scope.row.status] }}
@@ -51,13 +51,13 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
-      <el-pagination
-        :current-page="page"
-        :page-size="10"
-        layout="total, prev, pager, next"
+      <!-- 使用自定义 pagination 组件 -->
+      <pagination
+        v-show="total > 0"
         :total="total"
-        @current-change="handlePageChange"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.limit"
+        @pagination="getList"
       />
     </el-card>
   </div>
@@ -66,15 +66,19 @@
 <script>
 import { incidentApi } from '@/api/incident'
 import moment from 'moment'
+import Pagination from '@/components/Pagination'
 
 export default {
+  name: 'IncidentList',
+  components: { Pagination },
   data() {
     return {
       loading: false,
       tableData: [],
       total: 0,
-      page: 1,
-      searchForm: {
+      listQuery: {
+        page: 1,
+        limit: 20, // 与 pagination 组件的默认 limit 保持一致
         title: '',
         status: ''
       },
@@ -84,36 +88,39 @@ export default {
         { value: 2, label: '已解决' },
         { value: 3, label: '已关闭' }
       ],
-      // priorityMap 不再需要（因为后端直接返回 priority_display）
       statusMap: { 0: '待处理', 1: '处理中', 2: '已解决', 3: '已关闭' }
     }
   },
   created() {
-    this.fetchData()
+    this.getList()
   },
   methods: {
+    handleFilter() {
+      this.listQuery.page = 1
+      this.getList()
+    },
     formatDate(date) {
       return date ? moment(date).format('YYYY-MM-DD HH:mm') : ''
     },
-    fetchData() {
+    getList() {
       this.loading = true
-      incidentApi.list({
-        page: this.page,
-        ...this.searchForm
-      }).then(res => {
-        this.tableData = res.data.results || []
-        this.total = res.data.count || 0
-      }).finally(() => {
-        this.loading = false
-      })
-    },
-    handlePageChange(page) {
-      this.page = page
-      this.fetchData()
+      incidentApi.list(this.listQuery)
+        .then(res => {
+          this.tableData = res.data.results || []
+          this.total = res.data.count || 0
+        })
+        .finally(() => {
+          this.loading = false
+        })
     },
     resetSearch() {
-      this.searchForm = { title: '', status: '' }
-      this.fetchData()
+      this.listQuery = {
+        page: 1,
+        limit: 20,
+        title: '',
+        status: ''
+      }
+      this.getList()
     },
     handleView(id) {
       this.$router.push(`/incidents/${id}`)

@@ -1,6 +1,6 @@
-from rest_framework import serializers
 
-from system.models import SystemConfig, Menu, StorageConfig
+from rest_framework import serializers
+from .models import SystemConfig, Menu, StorageConfig
 
 
 class SystemConfigSerializer(serializers.ModelSerializer):
@@ -18,7 +18,7 @@ class MenuSerializer(serializers.ModelSerializer):
 
     def get_children(self, obj):
         if obj.children.exists():
-            return MenuSerializer(obj.children.order_by('order'), many=True).data
+            return MenuSerializer(obj.children.all(), many=True).data
         return []
 
 

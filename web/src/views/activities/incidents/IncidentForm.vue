@@ -44,8 +44,7 @@
 </template>
 
 <script>
-import { incidentApi } from '@/api/incident'
-import { categoryApi } from '@/api/category' // ✅ 新增导入
+import { incidentApi, categoryApi } from '@/api/incident'
 import moment from 'moment'
 
 export default {

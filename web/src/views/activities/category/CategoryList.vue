@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import { categoryApi } from '@/api/category'
+import { categoryApi } from '@/api/incident'
 
 export default {
   data() {
