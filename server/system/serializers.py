@@ -26,3 +26,5 @@ class StorageConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = StorageConfig
         fields = '__all__'
+
+
