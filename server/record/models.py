@@ -21,7 +21,7 @@ class OAInfo(models.Model):
         verbose_name = "OA信息"
         verbose_name_plural = "OA信息"
         ordering = ['-id']
-        db_table = 'idc_oa_info'
+        db_table = 'record_oa_info'
 
 
 class OAPerson(models.Model):
@@ -53,7 +53,7 @@ class OAPerson(models.Model):
     class Meta:
         verbose_name = "OA人员信息"
         verbose_name_plural = "OA人员信息"
-        db_table = 'idc_oa_person'
+        db_table = 'record_oa_person'
 
 
 class ProcessRecord(BaseModel):
@@ -106,7 +106,7 @@ class ProcessRecord(BaseModel):
         verbose_name = "人员进出记录"
         verbose_name_plural = "人员进出记录"
         ordering = ['-created_at']
-        db_table = 'idc_process_record'
+        db_table = 'record_process_record'
         indexes = [
             models.Index(fields=['entered_time', 'status']),
             models.Index(fields=['unit']),
@@ -151,7 +151,7 @@ class EntryLog(models.Model):
     class Meta:
         verbose_name = "进出日志"
         verbose_name_plural = "进出日志"
-        db_table = 'idc_entry_log'
+        db_table = 'record_entry_log'
         indexes = [
             models.Index(fields=['entered_time']),    # 按进出时间查询
             models.Index(fields=['process_record']),  # 按登记记录查询

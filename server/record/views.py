@@ -28,7 +28,6 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def export(self, request):
-        # 获取经过 filter、search、ordering 后的 queryset
         queryset = self.filter_queryset(self.get_queryset())
 
         data = []
@@ -36,10 +35,10 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
             data.append({
                 "申请人": record.applicant,
                 "人员姓名": record.name,
-                "电话号码": record.phone_number,  # 注意：这是加密字段，可能需要解密
+                "电话号码": record.phone_number,
                 "人员类型": dict(ProcessRecord.PERSON_TYPE_CHOICES).get(record.person_type, record.person_type),
                 "证件类型": dict(ProcessRecord.ID_TYPE_CHOICES).get(record.id_type, record.id_type),
-                "证件号码": record.id_number,  # 同样是加密字段
+                "证件号码": record.id_number,
                 "人员单位": record.unit,
                 "人员部门": record.department,
                 "登记状态": dict(ProcessRecord.STATUS_CHOICES).get(record.status, record.status),
