@@ -24,12 +24,13 @@ api_patterns = [
     path('users/', include('users.urls')),
     path('events/', include('events.urls')),
     path('system/', include('system.urls')),
+    path('record/', include('record.urls')),
 ]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/dev/', include(api_patterns)),
-    path('api/pord/', include(api_patterns)),
+    # path('api/pord/', include(api_patterns)),
     # API 文档路由
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),  # OpenAPI schema
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
