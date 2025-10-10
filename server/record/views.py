@@ -1,9 +1,10 @@
 import json
 import datetime
+import pandas as pd
 from django.views import View
 from django.conf import settings
 from django.http import HttpResponse
-from rest_framework import viewsets, serializers
+from rest_framework import viewsets
 from utils.cipher import AESCipher
 from .models import ProcessRecord, EntryLog, OAInfo, OAPerson
 from .serializers import ProcessRecordSerializer, EntryLogSerializer, OAInfoSerializer, OAPersonSerializer
@@ -14,7 +15,7 @@ from rest_framework import status
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from django.db.models import Count, Q
+from django.db.models import Count
 from utils.date_transform import get_date_range
 
 
@@ -24,6 +25,58 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
     filterset_class = ProcessRecordFilter
     ordering_fields = ['created_time', 'entered_time', 'exited_time']
     search_fields = ['name', 'unit', 'department', 'reason']
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        # 获取经过 filter、search、ordering 后的 queryset
+        queryset = self.filter_queryset(self.get_queryset())
+
+        data = []
+        for record in queryset:
+            data.append({
+                "申请人": record.applicant,
+                "人员姓名": record.name,
+                "电话号码": record.phone_number,  # 注意：这是加密字段，可能需要解密
+                "人员类型": dict(ProcessRecord.PERSON_TYPE_CHOICES).get(record.person_type, record.person_type),
+                "证件类型": dict(ProcessRecord.ID_TYPE_CHOICES).get(record.id_type, record.id_type),
+                "证件号码": record.id_number,  # 同样是加密字段
+                "人员单位": record.unit,
+                "人员部门": record.department,
+                "登记状态": dict(ProcessRecord.STATUS_CHOICES).get(record.status, record.status),
+                "申请进入时间": record.apply_enter_time,
+                "申请离开时间": record.apply_leave_time,
+                "实际进入时间": record.entered_time,
+                "实际离开时间": record.exited_time,
+                "进出次数": record.enter_count,
+                "陪同人": record.companion,
+                "进入原因": record.reason,
+                "携带物品": record.carried_items,
+                "门禁卡状态": dict(ProcessRecord.CARD_STATUS_CHOICES).get(record.card_status, record.card_status),
+                "门禁卡类型": dict(ProcessRecord.CARD_TYPE_CHOICES).get(record.card_type, record.card_type),
+                "证件质押状态": dict(ProcessRecord.PLEDGED_STATUS_CHOICES).get(record.pledged_status, record.pledged_status),
+                "备注": record.remarks,
+                "关联OA流程": record.oa_link,
+                "是否紧急": "是" if record.is_emergency else "否",
+                "是否正常": "是" if record.is_normal else "否",
+                "是否关联OA": "是" if record.is_linked else "否",
+                "创建时间": record.create_time,
+            })
+
+        # 转为 DataFrame
+        df = pd.DataFrame(data)
+
+        today = datetime.datetime.now().strftime("%Y%m%d")
+        filename = f"process_records_export_{today}.xlsx"
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='人员进出记录')
+
+        return response
 
     @action(detail=True, methods=['post'], url_path='enter')
     def enter(self, request, pk=None):
@@ -228,7 +281,6 @@ class SubmitEntryApplicationView(View):
             aes = AESCipher(oa_secret)
             data = aes.decrypt_base64(result.get('data'))
 
-            # 从顶层取 form 字段（数据结构是 {'number': ..., 'form': {...}}）
             form_data = data.get('form', {})
             # 获取是否后补字段（在 form 内）
             is_post_entry_str = form_data.get("fd_3e52febf30855e", {}).get("value", "0")
@@ -236,8 +288,6 @@ class SubmitEntryApplicationView(View):
             applicant = form_data.get("fd_3492b1ce199d78", {}).get("value", "")[:50],  # 申请人姓名
             if is_post_entry:
                 # ========== 后补流程：存入 OAInfo + OAPerson ==========
-
-                # 从 form_data 中提取字段（注意：每个字段是 {'label':..., 'value':...} 结构）
                 oa_info = OAInfo.objects.create(
                     applicant=applicant[0] if isinstance(applicant, tuple) else applicant,
                     apply_enter_time=timestamp_ms_to_datetime(form_data.get("fd_3b8333606a75b2", {}).get("value")),
@@ -249,10 +299,8 @@ class SubmitEntryApplicationView(View):
                     create_time=timezone.now()
                 )
 
-                # 处理明细表1：人员信息
                 person_list = form_data.get("fd_3586e01ffb8ada", {}).get("value", [])
                 for p in person_list:
-                    # 每个 p 是一个字典，字段结构如：{'fd_xxx': {'label':..., 'value':...}}
                     # 证件类型映射
                     id_type_map = {"工牌": 1, "身份证": 2, "驾驶证": 3, "护照": 4}
                     id_type_str = p.get("fd_3e5302cbb15384", {}).get("value", "工牌")
@@ -276,7 +324,6 @@ class SubmitEntryApplicationView(View):
                         department=p.get("fd_3e53011edca3fe", {}).get("value", "")
                     )
 
-                print("保存OAInfo成功")
                 return HttpResponse("ok")
 
             else:
@@ -299,8 +346,6 @@ class SubmitEntryApplicationView(View):
                     unit = p.get("fd_3e53011e4a1d6a", {}).get("value", "")
                     # 人员类根据工牌判断
                     person_type = 1 if id_type == 1 else 2
-
-                    # 工号优先，非工号备用
                     id_number = p.get("fd_3b833bb674cdae", {}).get("value") or p.get("fd_3e5338ea59258c", {}).get("value", "")
 
                     record = ProcessRecord.objects.create(
@@ -354,17 +399,14 @@ class SummaryCardsView(APIView):
 
         start, end = get_date_range(period, start_date, end_date)
 
-        # 查询当前时间段内“已入场”或“已离场”的有效登记记录（作为 EntryLog 的父记录）
         current_process_records = ProcessRecord.objects.filter(
-            entered_time__gte=start,    # 注意：这里仍用 ProcessRecord.entered_time 作为登记时间范围
+            entered_time__gte=start,
             entered_time__lte=end,
-            status__in=[2, 3]           # 已入场、已离场
+            status__in=[2, 3]
         )
 
-        # 实际进出总人数：去重（姓名+电话）
         total_people = current_process_records.values('name', 'phone_number').distinct().count()
 
-        # 实际进出总次数：统计关联的 EntryLog 条目数（每次进出）
         total_entries = EntryLog.objects.filter(
             process_record__in=current_process_records,
             entered_time__isnull=False  # 有进入时间才算一次有效进出
