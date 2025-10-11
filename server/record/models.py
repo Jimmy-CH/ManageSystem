@@ -147,6 +147,7 @@ class EntryLog(models.Model):
                                        choices=((0, "未质押"), (1, "工牌"), (2, "身份证"), (3, "驾驶证"), (4, "护照")))
     remarks = models.TextField(verbose_name="备注", blank=True, null=True,
                                help_text="异常情况说明：超时、损坏、脏乱差、补流程等")
+    is_normal = models.BooleanField(verbose_name="是否为正常进出", default=True, help_text="True表示正常进出记录")
 
     class Meta:
         verbose_name = "进出日志"
