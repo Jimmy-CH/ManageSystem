@@ -68,8 +68,8 @@ class IncidentViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = IncidentFilter
     search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'occurred_at', 'priority', 'status']
-    ordering = ['-created_at']
+    ordering_fields = ['create_time', 'occurred_at', 'priority', 'status']
+    ordering = ['-create_time']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -239,7 +239,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
                 "是" if obj.is_overdue_response else "否",
                 "是" if obj.is_overdue_resolve else "否",
                 obj.sla.level_name if obj.sla else "",
-                obj.created_at.strftime("%Y-%m-%d %H:%M")
+                obj.create_time.strftime("%Y-%m-%d %H:%M")
             ])
 
         # 自动列宽
@@ -258,8 +258,8 @@ class FaultViewSet(viewsets.ModelViewSet):
     serializer_class = FaultSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = FaultFilter
-    ordering_fields = ['created_at', 'downtime_minutes']
-    ordering = ['-created_at']
+    ordering_fields = ['create_time', 'downtime_minutes']
+    ordering = ['-create_time']
 
 
 

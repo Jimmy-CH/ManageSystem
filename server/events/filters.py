@@ -32,10 +32,10 @@ class IncidentFilter(django_filters.FilterSet):
             now = timezone.now()
             return queryset.filter(
                 Q(responded_at__isnull=True) & Q(sla__response_time__isnull=False) &
-                Q(created_at__lt=now - timezone.timedelta(hours=F('sla__response_time')))
+                Q(create_time__lt=now - timezone.timedelta(hours=F('sla__response_time')))
             ) | Q(
                 Q(status__in=[0, 1]) & Q(sla__resolve_time__isnull=False) &
-                Q(created_at__lt=now - timezone.timedelta(hours=F('sla__resolve_time')))
+                Q(create_time__lt=now - timezone.timedelta(hours=F('sla__resolve_time')))
             )
         return queryset
 

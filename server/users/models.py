@@ -47,8 +47,8 @@ class User(AbstractUser):
     department = models.CharField("部门", max_length=50, blank=True, null=True)
     position = models.CharField("职位", max_length=50, blank=True, null=True)
     status = models.BooleanField("是否启用", default=True)
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)
-    updated_at = models.DateTimeField("更新时间", auto_now=True)
+    create_time = models.DateTimeField("创建时间", auto_now_add=True)
+    update_time = models.DateTimeField("更新时间", auto_now=True)
     importance = models.PositiveIntegerField("重要程度", default=1)
 
     # 用户直接关联角色（一个用户可有多个角色）

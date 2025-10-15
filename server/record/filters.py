@@ -4,10 +4,10 @@ from .models import ProcessRecord, OAInfo, OAPerson
 
 class ProcessRecordFilter(django_filters.FilterSet):
     # 文本模糊查询
-    name = django_filters.CharFilter(lookup_expr='icontains')
+    person_name = django_filters.CharFilter(lookup_expr='icontains')
     unit = django_filters.CharFilter(lookup_expr='icontains')
     department = django_filters.CharFilter(lookup_expr='icontains')
-    oa_link = django_filters.CharFilter(lookup_expr='icontains')
+    oa_link_info = django_filters.CharFilter(lookup_expr='icontains')
 
     # 加密字段：仅支持精确匹配（无法模糊）
     phone_number = django_filters.CharFilter(method='filter_phone_number')
@@ -20,7 +20,7 @@ class ProcessRecordFilter(django_filters.FilterSet):
     pledged_status = django_filters.ChoiceFilter(choices=ProcessRecord.PLEDGED_STATUS_CHOICES)
 
     # 状态：支持多选
-    status = django_filters.MultipleChoiceFilter(choices=ProcessRecord.STATUS_CHOICES)
+    registration_status = django_filters.MultipleChoiceFilter(choices=ProcessRecord.STATUS_CHOICES)
 
     # 是否后补：映射到 is_emergency
     is_emergency = django_filters.CharFilter(method='filter_is_emergency')
@@ -72,7 +72,7 @@ class ProcessRecordFilter(django_filters.FilterSet):
 
 
 class OAPersonFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(lookup_expr='icontains')
+    person_name = django_filters.CharFilter(lookup_expr='icontains')
     unit = django_filters.CharFilter(lookup_expr='icontains')
     department = django_filters.CharFilter(lookup_expr='icontains')
     person_type = django_filters.ChoiceFilter(choices=OAPerson._meta.get_field('person_type').choices)
@@ -100,14 +100,14 @@ class OAPersonFilter(django_filters.FilterSet):
 
 
 class OAInfoFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
-    is_post_entry = django_filters.BooleanFilter()
+    applicant = django_filters.CharFilter(field_name='applicant', lookup_expr='icontains')
+    oa_link_info = django_filters.CharFilter(field_name='oa_link_info', lookup_expr='icontains')
     apply_enter_time_after = django_filters.DateTimeFilter(field_name='apply_enter_time', lookup_expr='gte')
     apply_enter_time_before = django_filters.DateTimeFilter(field_name='apply_enter_time', lookup_expr='lte')
     apply_leave_time_after = django_filters.DateTimeFilter(field_name='apply_leave_time', lookup_expr='gte')
     apply_leave_time_before = django_filters.DateTimeFilter(field_name='apply_leave_time', lookup_expr='lte')
-    unit = django_filters.CharFilter(field_name='persons__unit', lookup_expr='icontains', distinct=True)
-    department = django_filters.CharFilter(field_name='persons__department', lookup_expr='icontains', distinct=True)
+    create_time_after = django_filters.DateTimeFilter(field_name='create_time', lookup_expr='gte')
+    create_time_before = django_filters.DateTimeFilter(field_name='create_time', lookup_expr='lte')
 
     class Meta:
         model = OAInfo
