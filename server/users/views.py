@@ -69,7 +69,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     serializer_class = RoleSerializer
     filterset_class = RoleFilter  # ← 启用过滤器
     search_fields = ['name', 'description']
-    ordering_fields = ['id', 'name', 'importance', 'created_at']
+    ordering_fields = ['id', 'name', 'importance', 'create_time']
     ordering = ['id']  # 默认排序
 
     @action(detail=False, methods=['get'])
@@ -90,8 +90,8 @@ class RoleViewSet(viewsets.ModelViewSet):
                 '状态': '启用' if role.status else '禁用',
                 '重要程度': role.importance,
                 '权限列表': permission_names,
-                '创建时间': role.created_at.strftime('%Y-%m-%d %H:%M:%S') if role.created_at else '',
-                '更新时间': role.updated_at.strftime('%Y-%m-%d %H:%M:%S') if role.updated_at else '',
+                '创建时间': role.create_time.strftime('%Y-%m-%d %H:%M:%S') if role.create_time else '',
+                '更新时间': role.update_time.strftime('%Y-%m-%d %H:%M:%S') if role.update_time else '',
             })
         df = pd.DataFrame(data)
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -112,11 +112,11 @@ class RoleViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.prefetch_related('roles__permissions').all().order_by('-created_at')
+    queryset = User.objects.prefetch_related('roles__permissions').all().order_by('-create_time')
     serializer_class = UserSerializer
     filterset_class = UserFilter
     search_fields = ['username', 'phone']
-    ordering_fields = ['id', 'username', 'importance', 'created_at']
+    ordering_fields = ['id', 'username', 'importance', 'create_time']
     ordering = ['id']  # 默认排序
 
     def create(self, request, *args, **kwargs):
@@ -212,8 +212,8 @@ class UserViewSet(viewsets.ModelViewSet):
                 "重要程度": user.importance,
                 "角色列表": role_names,
                 "权限列表": permissions,
-                "创建时间": user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else "",
-                "更新时间": user.updated_at.strftime("%Y-%m-%d %H:%M:%S") if user.updated_at else "",
+                "创建时间": user.create_time.strftime("%Y-%m-%d %H:%M:%S") if user.create_time else "",
+                "更新时间": user.update_time.strftime("%Y-%m-%d %H:%M:%S") if user.update_time else "",
             })
 
         df = pd.DataFrame(data)

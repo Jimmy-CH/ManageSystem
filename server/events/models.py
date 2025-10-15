@@ -108,7 +108,7 @@ class Incident(BaseModel):
     class Meta:
         verbose_name = "事件"
         verbose_name_plural = "事件管理"
-        ordering = ['-created_at']
+        ordering = ['-create_time']
 
     def __str__(self):
         return self.title
@@ -118,7 +118,7 @@ class Incident(BaseModel):
         """是否响应超时"""
         if not self.sla or not self.responded_at:
             return False
-        expected = self.created_at + timezone.timedelta(hours=self.sla.response_time)
+        expected = self.create_time + timezone.timedelta(hours=self.sla.response_time)
         return timezone.now() > expected and not self.responded_at
 
     @property
@@ -126,7 +126,7 @@ class Incident(BaseModel):
         """是否解决超时"""
         if not self.sla or self.status in [2, 3]:
             return False
-        expected = self.created_at + timezone.timedelta(hours=self.sla.resolve_time)
+        expected = self.create_time + timezone.timedelta(hours=self.sla.resolve_time)
         return timezone.now() > expected
 
 
@@ -147,7 +147,7 @@ class Fault(BaseModel):
     class Meta:
         verbose_name = "故障"
         verbose_name_plural = "故障管理"
-        ordering = ['-created_at']
+        ordering = ['-create_time']
 
     def __str__(self):
         return f"故障 #{self.id} - {self.incident.title}"

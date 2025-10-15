@@ -27,8 +27,8 @@ class UserFilter(django_filters.FilterSet):
     phone = django_filters.CharFilter(field_name='phone', lookup_expr='icontains')
 
     # 创建时间范围
-    created_at__gte = django_filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')
-    created_at__lte = django_filters.DateTimeFilter(field_name='created_at', lookup_expr='lte')
+    create_time__gte = django_filters.DateTimeFilter(field_name='create_time', lookup_expr='gte')
+    create_time__lte = django_filters.DateTimeFilter(field_name='create_time', lookup_expr='lte')
 
     class Meta:
         model = User

@@ -17,7 +17,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = [
             'id', 'name', 'parent', 'level', 'order', 'is_active',
-            'full_path_name', 'children', 'created_at', 'updated_at'
+            'full_path_name', 'children', 'create_time', 'update_time'
         ]
 
     def get_children(self, obj):
@@ -46,7 +46,7 @@ class FaultSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'incident', 'detail', 'root_cause', 'solution',
             'downtime_minutes', 'impact_scope', 'status', 'status_display',
-            'created_at', 'updated_at'
+            'create_time', 'update_time'
         ]
 
 
@@ -71,7 +71,7 @@ class IncidentListSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'occurred_at', 'responded_at', 'resolved_at',
             'sla', 'sla_level', 'is_active',
             'is_overdue_response', 'is_overdue_resolve', 'fault_count',
-            'created_at', 'updated_at'
+            'create_time', 'update_time'
         ]
 
     def get_fault_count(self, obj):

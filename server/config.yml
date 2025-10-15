@@ -6,7 +6,7 @@ development:
   # MySQL 数据库配置
   database:
     engine: django.db.backends.mysql
-    name: 'server_db'
+    name: 'ms_db'
     user: 'root'
     password: 'yTo*XingDun.456'
     host: 10.130.18.74
@@ -47,7 +47,7 @@ production:
   # MySQL 数据库配置
   database:
     engine: django.db.backends.mysql
-    name: 'server_db'
+    name: 'ms_db'
     user: 'root'
     password: 'yTo*XingDun.456'
     host: 10.130.18.74

@@ -60,7 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'email', 'phone', 'department', 'position', 'avatar', 'status',
-                  'role_ids', 'roles', 'created_at', 'updated_at', 'importance']
+                  'role_ids', 'roles', 'create_time', 'update_time', 'importance']
 
     def create(self, validated_data):
         roles = validated_data.pop('roles', [])

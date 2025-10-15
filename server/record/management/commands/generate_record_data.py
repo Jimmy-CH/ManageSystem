@@ -1,118 +1,147 @@
 
-import random
-from datetime import timedelta
 from django.core.management.base import BaseCommand
+from django.conf import settings
 from django.utils import timezone
+from datetime import timedelta
+import random
+
+# 安全检查：禁止在生产环境运行
+if not settings.DEBUG:
+    raise RuntimeError("禁止在非 DEBUG 模式下运行此命令！")
+
 from record.models import OAInfo, OAPerson, ProcessRecord, EntryLog
 
 
+def random_aware_datetime(start_days=-30, end_days=7):
+    """
+    生成一个带时区信息的随机 datetime（aware datetime）
+    范围：从当前时间往前 start_days 天，到往后 end_days 天
+    """
+    now = timezone.now()
+    # 随机天数（包含负数）
+    days = random.randint(start_days, end_days)
+    # 随机小时和分钟
+    hours = random.randint(0, 23)
+    minutes = random.randint(0, 59)
+    random_delta = timedelta(days=days, hours=hours, minutes=minutes)
+    return now + random_delta
+
+
 class Command(BaseCommand):
-    help = 'Generate test data for OAInfo, OAPerson, ProcessRecord, and EntryLog'
+    help = '生成测试用的 OA 申请、人员、进出记录及日志（带时区支持）'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--oa-count',
+            type=int,
+            default=10,
+            help='要生成的 OA 申请数量（默认: 10）'
+        )
+        parser.add_argument(
+            '--persons-per-oa',
+            type=int,
+            default=2,
+            help='每个 OA 申请关联的人员数（默认: 2）'
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write("开始生成测试数据...")
+        from faker import Faker
+        fake = Faker('zh_CN')
 
-        # ===== 1. 生成后补流程（OAInfo + OAPerson）=====
-        applicants = ["张三", "李四", "王五", "赵六", "孙七"]
-        units = ["蛟龙集团IT部", "外部供应商A", "外部供应商B", "数据中心运维组", "安全审计部"]
-        departments = ["运维部", "开发部", "安全部", "外包管理", "基础设施"]
-        id_types = ["工牌", "身份证", "驾驶证", "护照"]
-        id_numbers = [
-            "EMP2024001", "110101199001011234", "京A12345", "E12345678",
-            "EMP2024002", "110101199102022345", "沪B67890", "E87654321"
-        ]
+        oa_count = options['oa_count']
+        persons_per_oa = options['persons_per_oa']
 
-        for i in range(5):
-            applicant = applicants[i % len(applicants)]
-            now = timezone.now()
-            enter_time = now - timedelta(days=random.randint(1, 7), hours=random.randint(0, 23))
-            leave_time = enter_time + timedelta(hours=random.randint(2, 12))
+        self.stdout.write(
+            self.style.SUCCESS(f'开始生成 {oa_count} 个 OA 申请，每个含 {persons_per_oa} 人...')
+        )
+
+        for _ in range(oa_count):
+            # 生成带时区的时间
+            apply_enter = random_aware_datetime(-30, 7)
+            apply_leave = apply_enter + timedelta(days=random.randint(1, 10))
+            applicant_time = random_aware_datetime(-30, 0)  # 申请时间不晚于现在
 
             oa_info = OAInfo.objects.create(
-                applicant=applicant,
-                apply_enter_time=enter_time,
-                apply_leave_time=leave_time,
+                applicant=fake.name(),
+                apply_enter_time=apply_enter,
+                apply_leave_time=apply_leave,
                 apply_count=random.randint(1, 5),
                 connected_count=0,
-                is_post_entry=True,
-                oa_link=f"https://oa.example.com/process/{1000 + i}"
+                is_post_entry=random.choice([True, False]),
+                oa_link=fake.url() if random.choice([True, False]) else None,
+                oa_link_info=fake.sentence()[:100] if random.choice([True, False]) else None,
+                is_linked=random.choice([True, False]),
+                applicant_time=applicant_time,
             )
 
-            person_count = random.randint(1, 3)
-            for j in range(person_count):
-                id_type_str = random.choice(id_types)
-                id_type = {"工牌": 1, "身份证": 2, "驾驶证": 3, "护照": 4}[id_type_str]
-                person_type = 1 if id_type == 1 else 2
-                id_number = random.choice(id_numbers)
-
-                OAPerson.objects.create(
+            for _ in range(persons_per_oa):
+                person = OAPerson.objects.create(
+                    person_name=fake.name(),
+                    phone_number=fake.phone_number(),
+                    person_type=random.choice([1, 2]),
+                    id_type=random.choice([1, 2, 3, 4]),
+                    id_number=fake.ssn()[:18] if random.choice([True, False]) else fake.license_plate(),
+                    unit=random.choice(['蛟龙集团总部', '技术研发中心', '市场部', '外部合作公司A']),
+                    department=random.choice(['软件开发部', '运维部', '人力资源', '财务部']),
+                    is_linked=random.choice([True, False]),
                     oa_info=oa_info,
-                    name=f"{applicant}团队成员{j+1}",
-                    phone_number=f"138{random.randint(10000000, 99999999)}",
-                    person_type=person_type,
-                    id_type=id_type,
-                    id_number=id_number,
-                    unit=random.choice(units),
-                    department=random.choice(departments),
-                    is_linked=False
                 )
 
-        self.stdout.write(self.style.SUCCESS("✅ 已生成 5 条后补流程数据"))
+                # 实际进入/离开时间：可能为空，也可能在 apply_enter 之后
+                entered = None
+                exited = None
+                if random.choice([True, False]):
+                    entered = apply_enter + timedelta(minutes=random.randint(0, 120))
+                    if random.choice([True, False]):
+                        exited = entered + timedelta(hours=random.randint(1, 8))
 
-        # ===== 2. 生成正常流程（ProcessRecord）=====
-        reasons = ["设备巡检", "服务器维护", "网络调试", "安全检查", "数据迁移"]
-        items = ["笔记本电脑", "U盘", "工具箱", "测试设备", "无"]
+                record = ProcessRecord.objects.create(
+                    applicant=oa_info.applicant,
+                    person_name=person.person_name,
+                    phone_number=person.phone_number,
+                    person_type=person.person_type,
+                    id_type=person.id_type,
+                    id_number=person.id_number,
+                    unit=person.unit,
+                    department=person.department,
+                    registration_status=random.choice([1, 2, 3]),
+                    apply_enter_time=oa_info.apply_enter_time,
+                    apply_leave_time=oa_info.apply_leave_time,
+                    entered_time=entered,
+                    exited_time=exited,
+                    enter_count=1,
+                    companion=random.choice(['张三', '李四', '王五', '无']),
+                    reason=fake.sentence(nb_words=6),
+                    carried_items=fake.sentence(nb_words=4),
+                    card_status=random.choice([1, 2, 3, 4]),
+                    card_type=random.choice([1, 2, 3, 4, 5]),
+                    pledged_status=random.choice([1, 2, 3, 4]),
+                    remarks=fake.text(max_nb_chars=100) if random.choice([True, False]) else None,
+                    oa_link=oa_info.oa_link,
+                    is_emergency=False,
+                    is_normal=True,
+                    is_linked=True,
+                    oa_link_info=oa_info.oa_link_info,
+                    applicant_time=oa_info.applicant_time,
+                )
 
-        for i in range(10):
-            applicant = random.choice(applicants)
-            enter_time = timezone.now() + timedelta(days=random.randint(-3, 3), hours=random.randint(0, 23))
-            leave_time = enter_time + timedelta(hours=random.randint(1, 8))
-
-            record = ProcessRecord.objects.create(
-                applicant=applicant,
-                name=f"正常流程人员{i+1}",
-                phone_number=f"139{random.randint(10000000, 99999999)}",
-                person_type=random.choice([1, 2]),
-                id_type=random.choice([1, 2, 3, 4]),
-                id_number=random.choice(id_numbers),
-                unit=random.choice(units),
-                department=random.choice(departments),
-                status=random.choice([1, 2, 3]),  # 未入场/已入场/已离场
-                apply_enter_time=enter_time,
-                apply_leave_time=leave_time,
-                entered_time=enter_time if random.random() > 0.5 else None,
-                exited_time=leave_time if random.random() > 0.7 else None,
-                enter_count=1,
-                companion="无" if random.random() > 0.3 else "管理员老刘",
-                reason=random.choice(reasons),
-                carried_items=random.choice(items),
-                card_status=random.choice([1, 2, 3]),
-                card_type=random.randint(1, 5),
-                pledged_status=random.choice([1, 2, 3]),
-                remarks="",
-                oa_link="",
-                is_emergency=False,
-                is_normal=True,
-                is_linked=True,
-                create_user="admin",
-                update_user="admin"
-            )
-
-            # ===== 3. 为部分记录生成 EntryLog =====
-            if random.random() > 0.4:  # 60% 概率生成日志
                 EntryLog.objects.create(
                     process_record=record,
-                    entered_time=record.entered_time or (record.apply_enter_time if random.random() > 0.5 else None),
-                    exited_time=record.exited_time or (record.apply_leave_time if random.random() > 0.5 else None),
-                    create_user="admin",
-                    update_user="admin",
+                    entered_time=record.entered_time or timezone.now(),
+                    exited_time=record.exited_time or (timezone.now() + timedelta(hours=3)),
+                    create_time=timezone.now(),
+                    create_user_code=fake.user_name(),
+                    create_user_name=fake.name(),
                     card_status=record.card_status,
                     card_type=record.card_type,
                     pledged_status=record.pledged_status,
                     id_type=record.id_type,
-                    remarks="自动生成测试日志"
+                    remarks=record.remarks,
+                    is_normal=record.is_normal,
+                    operation=random.choice(['入场', '离场']),
+                    companion=record.companion,
                 )
 
-        self.stdout.write(self.style.SUCCESS("✅ 已生成 10 条正常流程记录及部分进出日志"))
-
-        self.stdout.write(self.style.SUCCESS("🎉 测试数据生成完成！"))
+        self.stdout.write(
+            self.style.SUCCESS(f'✅ 成功生成 {oa_count} 个 OA 申请及相关数据！')
+        )
