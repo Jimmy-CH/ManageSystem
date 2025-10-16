@@ -1,113 +1,191 @@
-# yourapp/management/commands/generate_fake_data.py
+
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.conf import settings
 from faker import Faker
 import random
-from system.models import SystemConfig, Menu, StorageConfig  # 替换 yourapp 为你的实际 app 名称
 
+# 安全防护：禁止在生产环境运行
+if not settings.DEBUG:
+    raise RuntimeError("❌ 禁止在生产环境运行此命令！")
 
-fake = Faker('zh_CN')  # 使用中文假数据
+# 导入模型
+from system.models import SystemConfig, Menu, StorageConfig
+
+fake = Faker('zh_CN')
 
 
 class Command(BaseCommand):
-    help = '生成系统配置、菜单、存储配置的假数据'
+    help = '生成系统配置、菜单、存储配置的测试数据'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--clear', action='store_true', help='清空现有数据（谨慎使用）')
 
     def handle(self, *args, **options):
-        self.stdout.write('开始生成假数据...')
+        clear = options['clear']
 
-        with transaction.atomic():
-            self.create_system_configs()
-            self.create_menus()
-            self.create_storage_configs()
+        if clear:
+            self.stdout.write(self.style.WARNING("⚠️ 正在清空 system 表数据..."))
+            StorageConfig.objects.all().delete()
+            Menu.objects.all().delete()
+            SystemConfig.objects.all().delete()
 
-        self.stdout.write(
-            self.style.SUCCESS('✅ 假数据生成完成！')
-        )
+        self.stdout.write("开始生成系统测试数据...")
 
-    def create_system_configs(self):
-        configs = [
-            {"key": "site_title", "label": "网站标题", "type": "text", "group": "basic", "value": fake.sentence(nb_words=3)},
-            {"key": "admin_email", "label": "管理员邮箱", "type": "text", "group": "basic", "value": fake.email()},
-            {"key": "max_upload_size", "label": "最大上传大小(MB)", "type": "number", "group": "basic", "value": "100"},
-            {"key": "enable_register", "label": "是否开放注册", "type": "boolean", "group": "auth", "value": "true"},
-            {"key": "seo_description", "label": "SEO描述", "type": "textarea", "group": "seo", "value": fake.paragraph()},
-            {"key": "logo_url", "label": "网站Logo", "type": "image", "group": "basic", "value": fake.image_url()},
+        # ========================
+        # 1. 系统参数配置
+        # ========================
+        config_groups = ['basic', 'seo', 'mail', 'auth', 'sms', 'oss']
+        config_items = [
+            # basic
+            ("site_name", "MyAdmin", "网站名称", "text", "basic", "网站标题"),
+            ("site_logo", "/static/logo.png", "网站LOGO", "image", "basic", None),
+            ("record_number", "京ICP备12345678号", "备案号", "text", "basic", None),
+            # seo
+            ("seo_title", "管理系统", "SEO标题", "text", "seo", None),
+            ("seo_keywords", "admin,system", "关键词", "text", "seo", None),
+            ("seo_description", "这是一个后台管理系统", "描述", "textarea", "seo", None),
+            # mail
+            ("smtp_host", "smtp.example.com", "SMTP主机", "text", "mail", None),
+            ("smtp_port", 587, "SMTP端口", "number", "mail", None),
+            ("smtp_user", "admin@example.com", "发件邮箱", "text", "mail", None),
+            ("smtp_password", "******", "SMTP密码", "text", "mail", "敏感信息"),
+            ("email_enabled", True, "启用邮件", "boolean", "mail", None),
+            # auth
+            ("login_captcha", True, "登录验证码", "boolean", "auth", None),
+            ("max_login_attempts", 5, "最大登录尝试次数", "number", "auth", None),
         ]
-        for conf in configs:
-            SystemConfig.objects.get_or_create(
-                key=conf["key"],
+
+        created_configs = 0
+        for key, value, label, typ, group, remark in config_items:
+            obj, created = SystemConfig.objects.get_or_create(
+                key=key,
                 defaults={
-                    "value": conf["value"],
-                    "label": conf["label"],
-                    "type": conf["type"],
-                    "group": conf["group"],
-                    "remark": fake.sentence() if random.random() > 0.5 else None
+                    'value': str(value),
+                    'label': label,
+                    'type': typ,
+                    'group': group,
+                    'remark': remark,
                 }
             )
-        self.stdout.write('✅ SystemConfig 数据已生成')
+            if created:
+                created_configs += 1
 
-    def create_menus(self):
-        # 先清空（可选）
-        Menu.objects.all().delete()
+        self.stdout.write(self.style.SUCCESS(f"✅ 系统配置: {created_configs} 项"))
 
-        # 根菜单
-        dashboard = Menu.objects.create(title="仪表盘", icon="dashboard", path="/dashboard", component="Dashboard", order=1)
-        user_manage = Menu.objects.create(title="用户管理", icon="user", path="/user", component="User", order=2)
-        system = Menu.objects.create(title="系统设置", icon="setting", order=3)
+        # ========================
+        # 2. 菜单（树形结构）
+        # ========================
+        # 先创建顶级菜单
+        top_menus = [
+            ("系统管理", "system", "/system", "Layout", None, 1, True, None),
+            ("内容管理", "content", "/content", "Layout", None, 2, True, None),
+            ("用户中心", "user", "/user", "Layout", None, 3, True, None),
+        ]
 
-        # 子菜单
-        Menu.objects.create(title="角色管理", parent=user_manage, path="/role", component="Role", order=1)
-        Menu.objects.create(title="权限管理", parent=user_manage, path="/permission", component="Permission", order=2)
+        menu_objects = {}
+        for title, icon, path, component, parent_key, order, visible, perm in top_menus:
+            menu = Menu.objects.create(
+                title=title,
+                icon=icon,
+                path=path,
+                component=component,
+                parent=None,
+                order=order,
+                visible=visible,
+                permission=perm
+            )
+            menu_objects[title] = menu
 
-        Menu.objects.create(title="菜单管理", parent=system, path="/menu", component="Menu", order=1)
-        Menu.objects.create(title="参数配置", parent=system, path="/config", component="SystemConfig", order=2)
-        Menu.objects.create(title="存储配置", parent=system, path="/storage", component="StorageConfig", order=3)
+        # 创建子菜单
+        sub_menus = [
+            # 系统管理下
+            ("用户管理", "user", "/system/user", "system/user/index", "系统管理", 1, True, "user:list"),
+            ("角色管理", "role", "/system/role", "system/role/index", "系统管理", 2, True, "role:list"),
+            ("菜单管理", "menu", "/system/menu", "system/menu/index", "系统管理", 3, True, "menu:list"),
+            ("系统配置", "setting", "/system/config", "system/config/index", "系统管理", 4, True, "config:list"),
+            ("存储配置", "storage", "/system/storage", "system/storage/index", "系统管理", 5, True, "storage:list"),
+            # 内容管理下
+            ("文章管理", "article", "/content/article", "content/article/index", "内容管理", 1, True, "article:list"),
+            ("分类管理", "category", "/content/category", "content/category/index", "内容管理", 2, True, "category:list"),
+            # 用户中心下
+            ("个人资料", "profile", "/user/profile", "user/profile/index", "用户中心", 1, True, None),
+            ("修改密码", "password", "/user/password", "user/password/index", "用户中心", 2, True, None),
+        ]
 
-        self.stdout.write('✅ Menu 数据已生成（含树形结构）')
+        for title, icon, path, component, parent_title, order, visible, perm in sub_menus:
+            parent = menu_objects.get(parent_title)
+            if parent:
+                Menu.objects.create(
+                    title=title,
+                    icon=icon,
+                    path=path,
+                    component=component,
+                    parent=parent,
+                    order=order,
+                    visible=visible,
+                    permission=perm
+                )
 
-    def create_storage_configs(self):
-        storages = [
+        total_menus = Menu.objects.count()
+        self.stdout.write(self.style.SUCCESS(f"✅ 菜单: {total_menus} 项"))
+
+        # ========================
+        # 3. 存储配置
+        # ========================
+        storage_configs = [
             {
                 "name": "本地存储",
                 "type": "local",
                 "is_default": True,
-                "base_url": "http://127.0.0.1:8000/media/",
-                "config": {"upload_path": "/uploads"}
+                "config": {
+                    "upload_path": "uploads/",
+                    "max_size": 10 * 1024 * 1024,  # 10MB
+                },
+                "base_url": "http://localhost:8000/media/"
             },
             {
-                "name": "MinIO测试",
+                "name": "MinIO 存储",
                 "type": "minio",
                 "is_default": False,
-                "base_url": "https://minio.example.com",
                 "config": {
-                    "endpoint": "minio.example.com",
-                    "access_key": fake.lexify(text="????????????????"),
-                    "secret_key": fake.lexify(text="????????????????????????????????"),
+                    "endpoint": "http://minio.example.com:9000",
+                    "access_key": fake.user_name(),
+                    "secret_key": fake.password(),
                     "bucket": "my-bucket",
-                    "secure": True
-                }
+                    "secure": False
+                },
+                "base_url": "https://minio.example.com/my-bucket/"
             },
             {
-                "name": "阿里云OSS",
+                "name": "阿里云 OSS",
                 "type": "aliyun",
                 "is_default": False,
-                "base_url": "https://my-bucket.oss-cn-beijing.aliyuncs.com",
                 "config": {
-                    "access_key_id": fake.lexify(text="LTAI?????????????"),
-                    "access_key_secret": fake.lexify(text="????????????????????????????????"),
-                    "bucket_name": "my-bucket",
-                    "region": "cn-beijing"
-                }
+                    "access_key_id": fake.uuid4(),
+                    "access_key_secret": fake.uuid4(),
+                    "bucket_name": "my-oss-bucket",
+                    "region": "cn-hangzhou",
+                    "internal": False
+                },
+                "base_url": "https://my-oss-bucket.oss-cn-hangzhou.aliyuncs.com/"
             }
         ]
-        for s in storages:
-            StorageConfig.objects.get_or_create(
-                name=s["name"],
+
+        created_storages = 0
+        for cfg in storage_configs:
+            obj, created = StorageConfig.objects.get_or_create(
+                name=cfg["name"],
                 defaults={
-                    "type": s["type"],
-                    "is_default": s["is_default"],
-                    "base_url": s["base_url"],
-                    "config": s["config"]
+                    "type": cfg["type"],
+                    "is_default": cfg["is_default"],
+                    "config": cfg["config"],
+                    "base_url": cfg["base_url"]
                 }
             )
-        self.stdout.write('✅ StorageConfig 数据已生成')
+            if created:
+                created_storages += 1
+
+        self.stdout.write(self.style.SUCCESS(f"✅ 存储配置: {created_storages} 项"))
+
+        self.stdout.write(self.style.SUCCESS("🎉 系统模块测试数据填充完成！"))
+

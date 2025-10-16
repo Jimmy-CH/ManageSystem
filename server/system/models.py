@@ -1,8 +1,9 @@
 # models.py
 from django.db import models
+from common.base_model import BaseModel
 
 
-class SystemConfig(models.Model):
+class SystemConfig(BaseModel):
     """
     系统参数配置表
     """
@@ -30,7 +31,7 @@ class SystemConfig(models.Model):
         return f"{self.label} ({self.key})"
 
 
-class Menu(models.Model):
+class Menu(BaseModel):
     """
     后台菜单（树形结构）
     """
@@ -53,7 +54,7 @@ class Menu(models.Model):
         return self.title
 
 
-class StorageConfig(models.Model):
+class StorageConfig(BaseModel):
     """
     文件存储配置
     """
