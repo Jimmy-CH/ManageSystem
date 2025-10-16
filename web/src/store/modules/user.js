@@ -66,8 +66,10 @@ const actions = {
         commit('SET_INFO', data)
         const { username, avatar } = data
         commit('SET_NAME', username)
-        // 拼接完整的url
-        const avatar_url = `${process.env.VUE_APP_AVATAR_URL}${avatar.startsWith('/') ? '' : '/'}${avatar}`
+
+        // 确保 avatar 是字符串，否则设为空字符串或默认头像
+        const safeAvatar = typeof avatar === 'string' ? avatar : ''
+        const avatar_url = `${process.env.VUE_APP_AVATAR_URL}${safeAvatar.startsWith('/') ? '' : '/'}${safeAvatar}`
         commit('SET_AVATAR', avatar_url)
         resolve(data)
       }).catch(error => {

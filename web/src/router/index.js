@@ -77,6 +77,19 @@ export const constantRoutes = [
   tableRouter,
   activityRouter,
   systemRouter,
+  {
+    path: '/record',
+    component: Layout,
+    redirect: '/record/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/record/PersonnelManagement.vue'),
+        name: 'Record',
+        meta: { title: '进出管理', icon: 'user' }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]
