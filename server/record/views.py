@@ -69,7 +69,7 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
                 if timezone.is_aware(dt):
                     # 转换为东八区时间，然后移除时区信息
                     return dt.astimezone(shanghai_tz).replace(tzinfo=None)
-                return dt  # 已是 naive，直接返回
+                return dt
 
             data.append({
                 "申请人": record.applicant,
@@ -125,9 +125,6 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
-        # user_info = request.user
-        # operator_code = user_info.get('uuid', 'admin')
-        # operator_name = user_info.get('user_name', 'admin')
 
         companion = data.get('companion', '无')
         card_status = int(data.get('card_status', 1))
@@ -177,9 +174,6 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
-        # user_info = request.user
-        # operator_code = user_info.get('uuid', 'admin')
-        # operator_name = user_info.get('user_name', 'admin')
 
         exit_condition = data.get('exit_condition', 'normal')
         remarks = data.get('remarks', '').strip()
@@ -288,10 +282,6 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         # 校验必要字段
         if not oa_info_id:
             return Response({"error": "oa_info_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # user_info = request.user
-        # operator_code = user_info.get('uuid', 'admin')
-        # operator_name = user_info.get('user_name', 'admin')
 
         try:
             oa_info = OAInfo.objects.get(id=oa_info_id)
