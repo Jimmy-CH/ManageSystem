@@ -212,7 +212,6 @@ export default {
   },
   data() {
     return {
-      // ✅ 关键修改：把 persons 合并进 form
       form: {
         entryTime: '',
         reason: '',
@@ -234,7 +233,6 @@ export default {
           }
         ]
       },
-      // ❌ 删除独立的 persons 数组
       rules: {
         entryTime: [{ required: true, message: '请输入入场时间', trigger: 'blur' }],
         reason: [{ required: true, message: '请输入进入原因', trigger: 'blur' }],
@@ -264,7 +262,6 @@ export default {
   methods: {
     resetForm() {
       this.$refs.entryForm.resetFields()
-      // ✅ 重置时也要重置 form.persons
       this.form.persons = [
         {
           name: '',
@@ -311,13 +308,56 @@ export default {
 
     submitForm() {
       this.$refs.entryForm.validate(valid => {
-        if (valid) {
-          // ✅ 直接提交 this.form，已包含所有数据
-          this.$emit('submit', { ...this.form })
-          this.dialogVisible = false
-        } else {
-          console.warn('表单校验失败')
+        if (!valid) return
+
+        const personCount = this.form.persons.length
+        if (personCount < 1 || personCount > 50) {
+          this.$message.error('登记人员数量必须在 1 至 50 人之间')
+          return
         }
+
+        if (!this.form.entryTime) {
+          this.$message.error('请填写入场时间')
+          return
+        }
+
+        // 时间处理
+        const apply_enter_time = this.form.entryTime.replace(' ', 'T')
+        const enterDate = new Date(apply_enter_time)
+        const leaveDate = new Date(enterDate.getTime() + 24 * 60 * 60 * 1000)
+        const apply_leave_time = leaveDate.toISOString().slice(0, 19)
+
+        // 枚举映射
+        const typeMap = { internal: 1, external: 2 }
+        const idTypeMap = { idcard: 2, passport: 4 }
+        const cardMap = { issued: 2, not_issued: 1 }
+        const pledgedMap = { deposited: 2, not_deposited: 1 }
+
+        const personnel = this.form.persons.map(p => ({
+          person_name: p.name,
+          phone_number: p.phone,
+          person_type: typeMap[p.type] || 2,
+          id_type: idTypeMap[p.idType] || 2,
+          id_number: p.idNo,
+          unit: p.unit,
+          department: p.department,
+          card_status: cardMap[p.cardInfo] || 1,
+          card_type: 1,
+          pledged_status: pledgedMap[p.idDeposit] || 1
+        }))
+
+        const payload = {
+          apply_enter_time,
+          apply_leave_time,
+          reason: this.form.reason,
+          carried_items: this.form.items,
+          companion: this.form.accompany || '无',
+          remarks: this.form.remarks || '',
+          personnel
+        }
+
+        this.$emit('submit', payload)
+        this.dialogVisible = false
       })
     }
   }

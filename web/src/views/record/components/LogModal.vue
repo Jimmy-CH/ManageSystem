@@ -6,9 +6,8 @@
     width="600px"
     @close="closeDialog"
   >
-    <!-- 日志列表 -->
     <div class="log-container">
-      <div v-for="(item, index) in logs" :key="index" class="log-item">
+      <div v-for="(item, index) in formattedLogs" :key="index" class="log-item">
         <!-- 时间和日期 -->
         <div class="time">
           <strong>{{ item.time }}</strong>
@@ -29,22 +28,31 @@
 
         <!-- 门禁卡状态 -->
         <div class="card-status">
-          <span :class="item.cardStatus.includes('未') || item.cardStatus.includes('损') ? 'warning' : 'normal'">
-            {{ item.cardStatus }}
+          <span :class="isAbnormal(item) ? 'warning' : 'normal'">
+            门禁卡：{{ item.cardStatus }}
           </span>
         </div>
 
-        <!-- 身份证状态 -->
-        <div class="id-status">
-          <span :class="item.idStatus.includes('未') || item.idStatus.includes('损') ? 'warning' : 'normal'">
-            {{ item.idStatus }}
+        <!-- 证件类型（非状态） -->
+        <div class="id-type">
+          <span class="normal">证件：{{ item.idType }}</span>
+        </div>
+
+        <!-- 质押状态（可选） -->
+        <div class="pledge-status">
+          <span :class="item.pledgedStatus.includes('未') ? 'normal' : 'warning'">
+            质押状态：{{ item.pledgedStatus }}
           </span>
         </div>
 
-        <!-- 备注（异常信息） -->
-        <div v-if="item.remark" class="remark">
-          <small>⚠️ {{ item.remark }}</small>
+        <!-- 备注或异常提示 -->
+        <div v-if="item.remark || !item.isNormal" class="remark">
+          <small>⚠️ {{ item.remark || (item.isNormal ? '' : '记录异常') }}</small>
         </div>
+      </div>
+
+      <div v-if="formattedLogs.length === 0" style="text-align: center; color: #999; padding: 20px;">
+        暂无日志
       </div>
     </div>
 
@@ -72,11 +80,38 @@ export default {
       set(val) {
         this.$emit('update:visible', val)
       }
+    },
+    formattedLogs() {
+      return this.logs.map(log => {
+        const isEntry = log.operation === '入场'
+        const timeStr = isEntry ? log.entered_time : log.exited_time
+
+        // 解析时间
+        const time = timeStr ? timeStr.split(' ')[1] : '--:--:--'
+        const date = timeStr ? timeStr.split(' ')[0] : '----'
+
+        return {
+          time,
+          date,
+          type: log.operation || '—',
+          operator: log.create_user_name || '—',
+          operatorId: log.create_user_code || '—',
+          cardStatus: log.card_status_display || '—',
+          idType: log.id_type_display || '—',
+          pledgedStatus: log.pledged_status_display || '—',
+          remark: log.remarks,
+          isNormal: log.is_normal !== false // 后端 is_normal 为 true 或 undefined 表示正常
+        }
+      })
     }
   },
   methods: {
     closeDialog() {
       this.$emit('close')
+    },
+    isAbnormal(item) {
+      // 可根据业务逻辑扩展，例如 card_status 不是“已归还”等
+      return !item.isNormal
     }
   }
 }
@@ -120,7 +155,6 @@ export default {
 
 .operation {
   font-weight: bold;
-  color: #409eff;
 }
 
 .operation.in {
@@ -132,29 +166,28 @@ export default {
 }
 
 .operator {
-  margin-top: 4px;
   color: #333;
 }
 
 .card-status,
-.id-status {
-  margin-top: 4px;
+.id-type,
+.pledge-status {
   font-size: 12px;
 }
 
-.card-status.normal,
-.id-status.normal {
-  color: #666;
-}
-
 .card-status.warning,
-.id-status.warning {
+.pledge-status.warning {
   color: #f56c6c;
   font-weight: 500;
 }
 
+.card-status.normal,
+.id-type.normal,
+.pledge-status.normal {
+  color: #666;
+}
+
 .remark {
-  margin-top: 4px;
   color: #f56c6c;
   font-size: 11px;
 }
