@@ -4,44 +4,43 @@
     <div class="search-bar">
       <el-form :inline="true" :model="searchForm" size="small">
         <el-form-item label="姓名">
-          <el-input v-model="searchForm.name" placeholder="请输入姓名" clearable />
+          <el-input v-model="searchForm.person_name" placeholder="请输入姓名" clearable />
         </el-form-item>
         <el-form-item label="人员类型">
-          <el-select v-model="searchForm.type" placeholder="请选择" clearable>
-            <el-option label="外部" value="external" />
-            <el-option label="内部" value="internal" />
+          <el-select v-model="searchForm.person_type" placeholder="请选择" clearable>
+            <el-option label="内部" :value="1" />
+            <el-option label="外部" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item label="证件类型">
-          <el-select v-model="searchForm.idType" placeholder="请选择" clearable>
-            <el-option label="身份证" value="idcard" />
-            <el-option label="护照" value="passport" />
+          <el-select v-model="searchForm.id_type" placeholder="请选择" clearable>
+            <el-option label="身份证" :value="1" />
+            <el-option label="护照" :value="2" />
+            <!-- 可根据后端枚举扩展 -->
           </el-select>
         </el-form-item>
         <el-form-item label="证件号码">
-          <el-input v-model="searchForm.idNo" placeholder="请输入证件号" clearable />
+          <el-input v-model="searchForm.id_number" placeholder="请输入证件号" clearable />
         </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="searchForm.department" placeholder="请选择" clearable>
-            <el-option label="技术部" value="tech" />
-            <el-option label="运营部" value="ops" />
-          </el-select>
+          <el-input v-model="searchForm.department" placeholder="请输入部门" clearable />
+          <!-- 如果后端是下拉枚举，可改用 el-select -->
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择" clearable>
-            <el-option label="已入" value="entered" />
-            <el-option label="已出" value="exited" />
-            <el-option label="未入" value="not_entered" />
+          <el-select v-model="searchForm.registration_status" placeholder="请选择" clearable>
+            <el-option label="未入" :value="0" />
+            <el-option label="已入" :value="1" />
+            <el-option label="已出" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item label="门禁卡状态">
-          <el-select v-model="searchForm.cardStatus" placeholder="请选择" clearable>
-            <el-option label="已激活" value="active" />
-            <el-option label="已停用" value="inactive" />
+          <el-select v-model="searchForm.card_status" placeholder="请选择" clearable>
+            <el-option label="已激活" :value="1" />
+            <el-option label="已停用" :value="0" />
           </el-select>
         </el-form-item>
-        <el-form-item label="OA">
-          <el-input v-model="searchForm.oa" placeholder="请输入OA" clearable />
+        <el-form-item label="OA申请人">
+          <el-input v-model="searchForm.applicant" placeholder="请输入OA申请人" clearable />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" size="small" @click="handleSearch">搜索</el-button>
@@ -49,36 +48,40 @@
         </el-form-item>
       </el-form>
     </div>
-    <!-- ✅ 操作按钮栏：放在搜索和表格之间 -->
+
+    <!-- 操作按钮栏 -->
     <div class="action-bar">
       <el-button size="small" @click="exportData">导出</el-button>
-      <el-button size="small" @click="openRegisterModal()">入场登记</el-button>
+      <el-button size="small" @click="openRegisterModal">入场登记</el-button>
     </div>
 
     <!-- 表格 -->
     <div class="table-container">
       <el-table :data="tableData" border style="width: 100%">
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="index" label="序号" width="60" />
-        <el-table-column prop="name" label="姓名" width="120" />
-        <el-table-column prop="phone" label="电话" width="120" />
-        <el-table-column prop="type" label="人员类型" width="100" />
-        <el-table-column prop="idType" label="证件类型" width="100" />
-        <el-table-column prop="idNo" label="证件号码" width="180" />
+        <el-table-column label="序号" width="60">
+          <template #default="scope">
+            {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="person_name" label="姓名" width="120" />
+        <el-table-column prop="phone_number" label="电话" width="120" />
+        <el-table-column prop="person_type_display" label="人员类型" width="100" />
+        <el-table-column prop="id_type_display" label="证件类型" width="100" />
+        <el-table-column prop="id_number" label="证件号码" width="180" />
+        <el-table-column prop="unit" label="单位" width="150" />
         <el-table-column prop="department" label="部门" width="120" />
-        <el-table-column prop="status" label="状态" width="100" />
-        <el-table-column prop="enterTime" label="进入时间" width="160" />
-        <el-table-column prop="exitTime" label="离开时间" width="160" />
-        <el-table-column prop="operator" label="操作人员" width="120" />
+        <el-table-column prop="registration_status_display" label="状态" width="100" />
+        <el-table-column prop="apply_enter_time" label="申请进入时间" width="160" />
+        <el-table-column prop="apply_leave_time" label="申请离开时间" width="160" />
+        <el-table-column prop="entered_time" label="进入时间" width="160" />
+        <el-table-column prop="exited_time" label="离开时间" width="160" />
+        <el-table-column prop="change_user_name" label="操作人员" width="120" />
         <el-table-column prop="reason" label="出入原因" width="180" />
-        <el-table-column prop="cardStatus" label="门禁卡状态" width="120" />
-        <el-table-column prop="oaApprover" label="OA审批人" width="120" />
-        <el-table-column prop="oaApproveTime" label="OA审批时间" width="160" />
-        <el-table-column prop="oaApplicant" label="OA申请人" width="120" />
-        <el-table-column prop="oaApplyTime" label="OA申请时间" width="160" />
+        <el-table-column prop="card_status_display" label="门禁卡状态" width="120" />
+        <el-table-column prop="applicant" label="OA申请人" width="120" />
+        <el-table-column prop="applicant_time" label="OA申请时间" width="160" />
         <el-table-column label="操作" width="300">
-          <template slot-scope="scope">
-            <!-- <el-button size="mini" @click="showDetail(scope.row)">详情</el-button> -->
+          <template #default="scope">
             <el-button size="mini" @click="showLogs(scope.row)">日志</el-button>
             <el-button size="mini" type="primary" @click="openEntryModal(scope.row)">入场</el-button>
             <el-button size="mini" type="danger" @click="openExitModal(scope.row)">离场</el-button>
@@ -88,39 +91,39 @@
       </el-table>
     </div>
 
-    <!-- 入场弹窗 -->
+    <!-- 分页组件 -->
+    <div class="pagination">
+      <el-pagination
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :current-page.sync="currentPage"
+        :page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+
+    <!-- 弹窗组件 -->
     <EntryModal
       :visible.sync="entryVisible"
       :personnel="currentPersonnel"
       @submit="handleEntrySubmit"
     />
-    <!-- 离场弹窗 -->
     <ExitModal
       :visible.sync="exitVisible"
       :personnel="currentPersonnel"
       @submit="handleExitSubmit"
     />
-
-    <!-- 详情弹窗 -->
-    <DetailModal
-      :visible.sync="detailVisible"
-      :personnel="currentPersonnel"
-      @update-personnel="handlePersonnelUpdate"
-    />
-
-    <!-- 日志弹窗 -->
     <LogModal
-      :visible="logVisible"
+      :visible.sync="logVisible"
       :logs="logs"
-      @close="logVisible = false"
     />
-    <!-- 登记弹窗 -->
     <RegisterModal
-      :visible="registerVisible"
+      :visible.sync="registerVisible"
       @submit="handleRegisterSubmit"
-      @update:visible="registerVisible = $event"
     />
-    <!-- OA 弹窗 -->
     <OaModal
       :visible.sync="oaModalVisible"
       @confirm="handleOaConfirm"
@@ -129,17 +132,16 @@
 </template>
 
 <script>
-import DetailModal from './DetailModal.vue'
 import LogModal from './LogModal.vue'
 import EntryModal from './EntryModal.vue'
 import ExitModal from './ExitModal.vue'
 import RegisterModal from './RegisterModal.vue'
 import OaModal from './OaModal.vue'
+import { recordApi } from '@/api/record'
 
 export default {
   name: 'PersonnelList',
   components: {
-    DetailModal,
     LogModal,
     EntryModal,
     ExitModal,
@@ -148,145 +150,181 @@ export default {
   },
   data() {
     return {
-      searchForm: {},
-      tableData: [
-        {
-          index: 1,
-          name: '王明',
-          phone: '17800001234',
-          type: 'external',
-          idType: '身份证',
-          idNo: '110101199001011234',
-          department: '技术部',
-          status: 'entered',
-          enterTime: '2025-08-07 09:00',
-          exitTime: '2025-08-07 18:00',
-          operator: '张三',
-          reason: '参观访问',
-          cardStatus: 'active',
-          oaApprover: '李四',
-          oaApproveTime: '2025-08-07 09:00',
-          oaApplicant: '王明',
-          oaApplyTime: '2025-08-07 08:30',
-          oaTitle: '',
-          oaId: '',
-          logs: [
-            { time: '2025-08-07 09:00', type: 'entry', operator: '张三', cardStatus: '已发放', remarks: '正常入场' },
-            { time: '2025-08-07 18:00', type: 'exit', operator: '李四', cardStatus: '已回收', remarks: '正常离场' }
-          ]
-        }
-      ],
+      searchForm: {
+        person_name: '',
+        person_type: null, // 1=内部, 2=外部
+        id_type: null, // 1=身份证, 2=护照
+        id_number: '',
+        department: '',
+        registration_status: null, // 0/1/2
+        card_status: null,
+        applicant: ''
+      },
+      tableData: [],
+      currentPage: 1,
+      pageSize: 10,
+      total: 0,
       detailVisible: false,
       logVisible: false,
       entryVisible: false,
       exitVisible: false,
       registerVisible: false,
       oaModalVisible: false,
-      currentPersonnel: {},
-      currentLogs: [],
-      logs: [
-        {
-          time: '17:30',
-          date: '2025-09-19',
-          type: '离场',
-          operator: '陈永超',
-          operatorId: '02540871',
-          cardStatus: '未归还 (卡4)',
-          idStatus: '已归还(身份证)',
-          remark: ''
-        },
-        {
-          time: '15:55',
-          date: '2025-09-19',
-          type: '入场',
-          operator: '陈永超',
-          operatorId: '02540871',
-          cardStatus: '已发卡 (卡4)',
-          idStatus: '已质押(身份证)',
-          remark: ''
-        },
-        {
-          time: '09:50',
-          date: '2025-09-19',
-          type: '离场',
-          operator: '陈永超',
-          operatorId: '02540871',
-          cardStatus: '未归还 (卡3)',
-          idStatus: '已归还(身份证)',
-          remark: '访客将卡遗失，已报备'
-        },
-        {
-          time: '09:30',
-          date: '2025-09-19',
-          type: '入场',
-          operator: '陈永超',
-          operatorId: '02540871',
-          cardStatus: '已发卡 (卡3)',
-          idStatus: '已质押(身份证)',
-          remark: ''
-        }
-      ]
+      currentPersonnel: null,
+      logs: []
     }
   },
+  async created() {
+    await this.loadData()
+  },
   methods: {
-    exportData() {
-      console.log('导出数据:', this.searchForm)
-      // 实际应用中可调用后端接口导出数据
-    },
-    openOaModal() {
-      this.oaModalVisible = true
-    },
-    handleOaConfirm(selected) {
-      if (selected && selected.title) {
-        this.$set(this.localPersonnel, 'oaTitle', selected.title)
-        this.$set(this.localPersonnel, 'oaId', selected.id)
-        // 向父组件同步更新（可选）
-        this.$emit('update-personnel', this.localPersonnel)
+    async loadData() {
+      try {
+        const res = await recordApi.list({
+          ...this.searchForm,
+          page: this.currentPage,
+          limit: this.pageSize
+        })
+        this.tableData = res.data.results || []
+        this.total = res.data.count || 0
+      } catch (error) {
+        this.$message.error('加载数据失败')
+        console.error(error)
       }
     },
+
+    handleSearch() {
+      this.currentPage = 1
+      this.loadData()
+    },
+
+    resetSearch() {
+      this.searchForm = {
+        person_name: '',
+        person_type: null,
+        id_type: null,
+        id_number: '',
+        department: '',
+        registration_status: null,
+        card_status: null,
+        applicant: ''
+      }
+      this.handleSearch()
+    },
+
+    async exportData() {
+      try {
+        const res = await recordApi.export(this.searchForm)
+        const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = '人员记录.xlsx'
+        a.click()
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        this.$message.error('导出失败')
+        console.error(error)
+      }
+    },
+
     openRegisterModal() {
       this.registerVisible = true
     },
-    handleRegisterSubmit(data) {
-      console.log('登记成功:', data)
-      // 可选：更新表格数据
+
+    async handleRegisterSubmit(data) {
+      try {
+        await recordApi.register(data)
+        this.$message.success('登记成功')
+        this.registerVisible = false
+        await this.loadData()
+      } catch (error) {
+        this.$message.error('登记失败')
+        console.error(error)
+      }
     },
+
     openEntryModal(row) {
-      this.currentPersonnel = { ...row } // 深拷贝避免引用问题
+      this.currentPersonnel = { ...row }
       this.entryVisible = true
     },
+
+    async handleEntrySubmit(data) {
+      try {
+        await recordApi.enter(this.currentPersonnel.id, data)
+        this.$message.success('入场成功')
+        this.entryVisible = false
+        await this.loadData()
+      } catch (error) {
+        this.$message.error('入场失败')
+        console.error(error)
+      }
+    },
+
     openExitModal(row) {
       this.currentPersonnel = { ...row }
       this.exitVisible = true
     },
-    handleEntrySubmit(data) {
-      console.log('入场登记成功:', data)
-      // 可选：更新表格数据
-    },
-    handleExitSubmit(data) {
-      console.log('离场登记成功:', data)
-      // 可选：更新表格数据
-    },
-    handleSearch() {
-      this.$emit('search', this.searchForm)
-    },
-    resetSearch() {
-      this.searchForm = {}
-      this.$emit('search', this.searchForm)
-    },
-    showDetail(row) {
-      this.currentPersonnel = { ...row }
-      this.detailVisible = true
-    },
-    showLogs(row) {
-      this.logVisible = true
-    },
-    handlePersonnelUpdate(updated) {
-      // 可选：更新 tableData 中对应行的数据
-      const index = this.tableData.findIndex(item => item.index === updated.index)
-      if (index !== -1) {
-        this.$set(this.tableData, index, { ...updated })
+
+    async handleExitSubmit(data) {
+      try {
+        await recordApi.exit(this.currentPersonnel.id, data)
+        this.$message.success('离场成功')
+        this.exitVisible = false
+        await this.loadData()
+      } catch (error) {
+        this.$message.error('离场失败')
+        console.error(error)
       }
+    },
+
+    async showDetail(row) {
+      try {
+        const res = await recordApi.detail(row.id)
+        this.currentPersonnel = this.formatTableData([res.data])[0]
+        this.detailVisible = true
+      } catch (error) {
+        this.$message.error('加载详情失败')
+        console.error(error)
+      }
+    },
+
+    async showLogs(row) {
+      try {
+        const res = await recordApi.logs(row.id)
+        this.logs = res.data.data || []
+        this.logVisible = true
+      } catch (error) {
+        this.$message.error('加载日志失败')
+        console.error(error)
+      }
+    },
+
+    openOaModal(row) {
+      this.currentPersonnel = { ...row }
+      this.oaModalVisible = true
+    },
+
+    async handleOaConfirm(selectedOa) {
+      if (!selectedOa?.id) return
+      try {
+        await recordApi.link(this.currentPersonnel.id, { oa_info_id: selectedOa.id })
+        this.$message.success('OA关联成功')
+        this.oaModalVisible = false
+        await this.loadData()
+      } catch (error) {
+        this.$message.error('OA关联失败')
+        console.error(error)
+      }
+    },
+    handleSizeChange(size) {
+      this.pageSize = size
+      this.loadData()
+    },
+
+    handleCurrentChange(page) {
+      this.currentPage = page
+      this.loadData()
     }
   }
 }

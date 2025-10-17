@@ -6,79 +6,65 @@
     width="800px"
     @close="resetForm"
   >
-    <!-- 人员信息 -->
+    <!-- 人员信息（只读） -->
     <div class="info-section">
       <h4>人员信息</h4>
-      <!-- 👇 包裹 el-form：只读信息，无需校验 -->
       <el-form :model="form" label-width="100px" size="small">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="姓名" prop="name">
+            <el-form-item label="姓名">
               <el-input v-model="form.name" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="人员类型" prop="type">
+            <el-form-item label="人员类型">
               <el-select v-model="form.type" disabled>
-                <el-option label="外部人员" value="external" />
                 <el-option label="内部人员" value="internal" />
+                <el-option label="外部人员" value="external" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="单位" prop="unit">
+            <el-form-item label="单位">
               <el-input v-model="form.unit" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="部门" prop="department">
+            <el-form-item label="部门">
               <el-input v-model="form.department" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="证件类型" prop="idType">
+            <el-form-item label="证件类型">
               <el-select v-model="form.idType" disabled>
                 <el-option label="身份证" value="idcard" />
                 <el-option label="护照" value="passport" />
+                <!-- 如有“工牌”等，可扩展 -->
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="证件号码" prop="idNo">
+            <el-form-item label="证件号码">
               <el-input v-model="form.idNo" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="电话" prop="phone">
+            <el-form-item label="电话">
               <el-input v-model="form.phone" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="进出时间" prop="timeRange">
-              <el-date-picker
-                v-model="form.timeRange"
-                type="datetimerange"
-                range-separator="至"
-                start-placeholder="开始时间"
-                end-placeholder="结束时间"
-                value-format="yyyy-MM-dd HH:mm"
-                format="yyyy-MM-dd HH:mm"
-                style="width: 100%;"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="进入原因" prop="reason">
+            <el-form-item label="进入原因">
               <el-input v-model="form.reason" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="携带物品" prop="items">
+            <el-form-item label="携带物品">
               <el-input v-model="form.items" readonly />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="关联OA" prop="oa">
+          <el-col :span="12">
+            <el-form-item label="关联OA">
               <el-input v-model="form.oa" readonly />
             </el-form-item>
           </el-col>
@@ -86,22 +72,22 @@
       </el-form>
     </div>
 
-    <!-- 登记表单 -->
+    <!-- 入场登记表单 -->
     <div class="entry-form">
       <el-tabs v-model="activeTab" type="card" style="margin-top: 15px;">
         <el-tab-pane label="入场登记" name="entry">
-          <!-- 👇 关键：Tab 内也需要独立的 el-form -->
           <el-form
             ref="entryForm"
             :model="form"
             label-width="100px"
             size="small"
           >
-            <el-form-item label="陪同人员" prop="accompany">
-              <el-select v-model="form.accompany" placeholder="请选择">
-                <el-option label="请选" value="" />
-                <el-option label="王晶晶(02540885)" value="wangjingjing" />
-                <el-option label="黄海龙(02540886)" value="huanghailong" />
+            <el-form-item label="陪同人员">
+              <el-select v-model="form.accompany" placeholder="请选择或留空">
+                <el-option label="无" value="" />
+                <el-option label="王晶晶(02540885)" value="王晶晶" />
+                <el-option label="黄海龙(02540886)" value="黄海龙" />
+                <!-- 可动态加载 -->
               </el-select>
             </el-form-item>
 
@@ -112,17 +98,38 @@
               </el-select>
             </el-form-item>
 
-            <el-form-item label="* 证件质押" prop="idDeposit">
-              <el-select v-model="form.idDeposit" placeholder="请选择" style="width: 100%;">
-                <el-option label="未质押" value="not_deposited" />
-                <el-option label="已质押" value="deposited" />
+            <!-- 卡类型：仅当选择“已发卡”时显示 -->
+            <el-form-item
+              v-if="form.cardInfo === 'issued'"
+              label="* 卡类型"
+              prop="cardType"
+            >
+              <el-select v-model="form.cardType" placeholder="请选择卡类型" style="width: 100%;">
+                <el-option label="卡1" :value="1" />
+                <el-option label="卡2" :value="2" />
+                <el-option label="卡3" :value="3" />
+                <el-option label="卡4" :value="4" />
+                <el-option label="卡5" :value="5" />
               </el-select>
             </el-form-item>
 
-            <el-form-item label="* 证件类型" prop="idDepositType">
+            <el-form-item label="* 证件质押" prop="idDeposit">
+              <el-select v-model="form.idDeposit" placeholder="请选择" style="width: 100%;">
+                <el-option label="未押证" value="not_deposited" />
+                <el-option label="已押证" value="deposited" />
+              </el-select>
+            </el-form-item>
+
+            <!-- 证件类型：仅当“已押证”时显示 -->
+            <el-form-item
+              v-if="form.idDeposit === 'deposited'"
+              label="* 证件类型"
+              prop="idDepositType"
+            >
               <el-select v-model="form.idDepositType" placeholder="请选择" style="width: 100%;">
                 <el-option label="身份证" value="idcard" />
                 <el-option label="护照" value="passport" />
+                <!-- 可扩展 -->
               </el-select>
             </el-form-item>
           </el-form>
@@ -141,7 +148,10 @@
 export default {
   name: 'EntryModal',
   props: {
-    visible: Boolean,
+    visible: {
+      type: Boolean,
+      default: false
+    },
     personnel: {
       type: Object,
       default: () => ({})
@@ -151,6 +161,7 @@ export default {
     return {
       activeTab: 'entry',
       form: {
+        // 只读信息
         name: '',
         type: 'external',
         unit: '',
@@ -158,14 +169,16 @@ export default {
         idType: 'idcard',
         idNo: '',
         phone: '',
-        timeRange: [],
         reason: '',
         items: '',
         oa: '',
+
+        // 可编辑字段
         accompany: '',
-        cardInfo: 'none',
-        idDeposit: 'not_deposited',
-        idDepositType: 'idcard'
+        cardInfo: 'none', // 'none' / 'issued'
+        cardType: 3, // 默认卡3，1~5
+        idDeposit: 'not_deposited', // 'not_deposited' / 'deposited'
+        idDepositType: 'idcard' // 'idcard' / 'passport'
       }
     }
   },
@@ -182,17 +195,27 @@ export default {
   watch: {
     personnel: {
       handler(newVal) {
-        if (newVal && newVal.name) {
-          this.form.name = newVal.name || ''
-          this.form.type = newVal.type || 'external'
-          this.form.unit = newVal.unit || ''
-          this.form.department = newVal.department || ''
-          this.form.idType = newVal.idType || 'idcard'
-          this.form.idNo = newVal.idNo || ''
-          this.form.phone = newVal.phone || ''
-          this.form.reason = newVal.reason || ''
-          this.form.items = newVal.items || ''
-          this.form.oa = newVal.oa || ''
+        if (!newVal || !newVal.person_name) return
+
+        this.form.name = newVal.person_name || ''
+        this.form.unit = newVal.unit || ''
+        this.form.department = newVal.department || ''
+        this.form.idNo = newVal.id_number || ''
+        this.form.phone = newVal.phone_number || ''
+        this.form.reason = newVal.reason || ''
+        this.form.items = newVal.carried_items || ''
+        this.form.oa = newVal.applicant || ''
+
+        // 人员类型：1=内部，2=外部
+        this.form.type = newVal.person_type === 1 ? 'internal' : 'external'
+
+        // 证件类型：假设 1=身份证，2=护照
+        if (newVal.id_type === 1) {
+          this.form.idType = 'idcard'
+        } else if (newVal.id_type === 2) {
+          this.form.idType = 'passport'
+        } else {
+          this.form.idType = 'idcard'
         }
       },
       immediate: true
@@ -200,19 +223,49 @@ export default {
   },
   methods: {
     resetForm() {
-      // 重置可编辑字段
       this.form.accompany = ''
       this.form.cardInfo = 'none'
+      this.form.cardType = 3
       this.form.idDeposit = 'not_deposited'
       this.form.idDepositType = 'idcard'
-      this.form.timeRange = []
     },
+
     submitForm() {
-      const payload = {
-        ...this.form,
-        status: 'entered'
+      // 转换逻辑
+      const card_status = this.form.cardInfo === 'issued' ? 2 : 1
+      const pledged_status = this.form.idDeposit === 'deposited' ? 2 : 1
+
+      // 校验条件字段
+      if (card_status === 2 && !this.form.cardType) {
+        this.$message.warning('请选择门禁卡类型')
+        return
       }
-      this.$emit('submit', payload)
+
+      if (pledged_status === 2 && !this.form.idDepositType) {
+        this.$message.warning('请选择押证类型')
+        return
+      }
+
+      // 构造提交数据
+      const payload = {
+        companion: this.form.accompany || '无',
+        card_status: card_status,
+        pledged_status: pledged_status
+      }
+
+      if (card_status === 2) {
+        payload.card_type = this.form.cardType
+      }
+
+      if (pledged_status === 2) {
+        payload.id_type = this.form.idDepositType === 'idcard' ? 1 : 2
+      }
+
+      // 触发提交事件，由父组件调用 API
+      this.$emit('submit', {
+        data: payload
+      })
+
       this.dialogVisible = false
     }
   }

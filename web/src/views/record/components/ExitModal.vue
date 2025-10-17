@@ -9,7 +9,6 @@
     <!-- 人员信息 -->
     <div class="info-section">
       <h4>人员信息</h4>
-      <!-- 👇 包裹只读信息的 el-form -->
       <el-form :model="form" label-width="100px" size="small">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -20,8 +19,8 @@
           <el-col :span="12">
             <el-form-item label="人员类型" prop="type">
               <el-select v-model="form.type" disabled>
-                <el-option label="外部人员" value="external" />
                 <el-option label="内部人员" value="internal" />
+                <el-option label="外部人员" value="external" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -38,6 +37,7 @@
           <el-col :span="12">
             <el-form-item label="证件类型" prop="idType">
               <el-select v-model="form.idType" disabled>
+                <el-option label="工牌" value="workcard" />
                 <el-option label="身份证" value="idcard" />
                 <el-option label="护照" value="passport" />
               </el-select>
@@ -90,7 +90,6 @@
     <div class="exit-form">
       <el-tabs v-model="activeTab" type="card" style="margin-top: 15px;">
         <el-tab-pane label="离场登记" name="exit">
-          <!-- 👇 关键：Tab 内必须有自己的 el-form -->
           <el-form
             ref="exitForm"
             :model="form"
@@ -184,17 +183,28 @@ export default {
   watch: {
     personnel: {
       handler(newVal) {
-        if (newVal && newVal.name) {
-          this.form.name = newVal.name || ''
-          this.form.type = newVal.type || 'external'
+        if (newVal && newVal.person_name) {
+          // 映射人员类型：1=internal, 2=external
+          const typeMap = { 1: 'internal', 2: 'external' }
+          // 映射证件类型：1=工牌(workcard), 2=idcard, 3=passport
+          const idTypeMap = { 1: 'workcard', 2: 'idcard', 3: 'passport' }
+
+          this.form.name = newVal.person_name || ''
+          this.form.type = typeMap[newVal.person_type] || 'external'
           this.form.unit = newVal.unit || ''
           this.form.department = newVal.department || ''
-          this.form.idType = newVal.idType || 'idcard'
-          this.form.idNo = newVal.idNo || ''
-          this.form.phone = newVal.phone || ''
+          this.form.idType = idTypeMap[newVal.id_type] || 'idcard'
+          this.form.idNo = newVal.id_number || ''
+          this.form.phone = newVal.phone_number || ''
           this.form.reason = newVal.reason || ''
-          this.form.items = newVal.items || ''
-          this.form.oa = newVal.oa || ''
+          this.form.items = newVal.carried_items || ''
+          this.form.oa = newVal.oa_link || ''
+
+          // 时间范围：apply_enter_time 到 apply_leave_time
+          this.form.timeRange = [
+            newVal.apply_enter_time,
+            newVal.apply_leave_time
+          ].filter(Boolean) // 过滤 null
         }
       },
       immediate: true
@@ -209,10 +219,20 @@ export default {
       this.form.timeRange = []
     },
     submitForm() {
-      const payload = {
-        ...this.form,
-        status: 'exited'
+      const { exitCondition, remarks } = this.form
+
+      if (exitCondition === 'abnormal' && (!remarks || remarks.trim() === '')) {
+        this.$message.warning('异常离场必须填写备注说明')
+        return
       }
+
+      const payload = {
+        exit_condition: exitCondition || 'normal',
+        ...(exitCondition === 'abnormal' && { remarks: remarks.trim() }),
+        ...(this.form.cardStatus !== undefined && { card_status: this.form.cardStatus }),
+        ...(this.form.pledgedStatus !== undefined && { pledged_status: this.form.pledgedStatus })
+      }
+
       this.$emit('submit', payload)
       this.dialogVisible = false
     }

@@ -1,4 +1,5 @@
 import json
+import pytz
 import datetime
 import pandas as pd
 from django.views import View
@@ -56,8 +57,20 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
     def export(self, request):
         queryset = self.filter_queryset(self.get_queryset())
 
+        # 获取东八区时区
+        shanghai_tz = pytz.timezone('Asia/Shanghai')
+
         data = []
         for record in queryset:
+            def localize_dt(dt):
+                """将带时区的 datetime 转为东八区 naive 时间；若为 None 则返回 None"""
+                if dt is None:
+                    return None
+                if timezone.is_aware(dt):
+                    # 转换为东八区时间，然后移除时区信息
+                    return dt.astimezone(shanghai_tz).replace(tzinfo=None)
+                return dt
+
             data.append({
                 "申请人": record.applicant,
                 "人员姓名": record.person_name,
@@ -67,24 +80,26 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
                 "证件号码": record.id_number,
                 "人员单位": record.unit,
                 "人员部门": record.department,
-                "登记状态": dict(ProcessRecord.STATUS_CHOICES).get(record.registration_status, record.registration_status),
-                "申请进入时间": record.apply_enter_time,
-                "申请离开时间": record.apply_leave_time,
-                "实际进入时间": record.entered_time,
-                "实际离开时间": record.exited_time,
+                "登记状态": dict(ProcessRecord.STATUS_CHOICES).get(record.registration_status,
+                                                                   record.registration_status),
+                "申请进入时间": localize_dt(record.apply_enter_time),
+                "申请离开时间": localize_dt(record.apply_leave_time),
+                "实际进入时间": localize_dt(record.entered_time),
+                "实际离开时间": localize_dt(record.exited_time),
                 "进出次数": record.enter_count,
                 "陪同人": record.companion,
                 "进入原因": record.reason,
                 "携带物品": record.carried_items,
                 "门禁卡状态": dict(ProcessRecord.CARD_STATUS_CHOICES).get(record.card_status, record.card_status),
                 "门禁卡类型": dict(ProcessRecord.CARD_TYPE_CHOICES).get(record.card_type, record.card_type),
-                "证件质押状态": dict(ProcessRecord.PLEDGED_STATUS_CHOICES).get(record.pledged_status, record.pledged_status),
+                "证件质押状态": dict(ProcessRecord.PLEDGED_STATUS_CHOICES).get(record.pledged_status,
+                                                                               record.pledged_status),
                 "备注": record.remarks,
                 "关联OA流程": record.oa_link,
                 "是否紧急": "是" if record.is_emergency else "否",
                 "是否正常": "是" if record.is_normal else "否",
                 "是否关联OA": "是" if record.is_linked else "否",
-                "创建时间": record.create_time,
+                "创建时间": localize_dt(record.create_time),
             })
 
         df = pd.DataFrame(data)
@@ -110,22 +125,19 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
-        # user_info = request.user
-        # operator_code = user_info.get('uuid', 'admin')
-        # operator_name = user_info.get('user_name', 'admin')
 
         companion = data.get('companion', '无')
         card_status = int(data.get('card_status', 1))
-        card_type = int(data.get('card_type', 1)) if card_status == 2 else None
+        card_type = int(data.get('card_type', 1)) if card_status == 2 else 1
         pledged_status = int(data.get('pledged_status', 1))
-        id_type = int(data.get('id_type', 0)) if pledged_status == 2 else None
+        id_type = int(data.get('id_type', 0)) if pledged_status == 2 else 0
 
         # 创建新的 EntryLog（不更新旧的）
         entry_log = EntryLog.objects.create(
             process_record=record,
             entered_time=timezone.now(),
             create_time=timezone.now(),
-            create_user_name=request.username or 'admin',
+            create_user_name=request.user.username or 'admin',
             card_status=card_status,
             card_type=card_type,
             pledged_status=pledged_status,
@@ -162,9 +174,6 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
-        # user_info = request.user
-        # operator_code = user_info.get('uuid', 'admin')
-        # operator_name = user_info.get('user_name', 'admin')
 
         exit_condition = data.get('exit_condition', 'normal')
         remarks = data.get('remarks', '').strip()
@@ -208,7 +217,7 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
             process_record=record,
             exited_time=timezone.now(),
             create_time=timezone.now(),
-            create_user_name=request.username or 'admin',
+            create_user_name=request.user.username or 'admin',
             card_status=new_card_status,
             card_type=latest_entry.card_type,
             pledged_status=new_pledged_status,
@@ -274,10 +283,6 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         if not oa_info_id:
             return Response({"error": "oa_info_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # user_info = request.user
-        # operator_code = user_info.get('uuid', 'admin')
-        # operator_name = user_info.get('user_name', 'admin')
-
         try:
             oa_info = OAInfo.objects.get(id=oa_info_id)
         except OAInfo.DoesNotExist:
@@ -286,7 +291,7 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         # 使用事务确保一致性
         with transaction.atomic():
             # 更新 ProcessRecord
-            record.change_user_name = request.username or 'admin'
+            record.change_user_name = request.user.username or 'admin'
             record.oa_link = oa_info.oa_link
             record.is_linked = True
             record.applicant = oa_info.applicant

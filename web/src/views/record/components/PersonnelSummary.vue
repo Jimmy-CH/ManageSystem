@@ -31,118 +31,340 @@
       <div class="card">
         <div class="icon"><i class="el-icon-user-solid" /></div>
         <div class="title">实际进出总人数</div>
-        <div class="value">{{ totalPeople }}<span class="trend">环比 ↑20%</span></div>
+        <div class="value">
+          {{ totalPeople }}
+          <span class="trend">{{ getTrendText(ringRatio.people) }}</span>
+        </div>
       </div>
       <div class="card">
         <div class="icon"><i class="el-icon-user-solid" /></div>
         <div class="title">实际进出总次数</div>
-        <div class="value">{{ totalTimes }}<span class="trend">环比 ↑20%</span></div>
+        <div class="value">
+          {{ totalTimes }}
+          <span class="trend">{{ getTrendText(ringRatio.entries) }}</span>
+        </div>
       </div>
       <div class="card">
         <div class="icon"><i class="el-icon-s-custom" /></div>
         <div class="title">进出单位数量</div>
-        <div class="value">{{ unitCount }}<span class="trend">环比 ↑20%</span></div>
+        <div class="value">
+          {{ unitCount }}
+          <span class="trend">{{ getTrendText(ringRatio.unit) }}</span>
+        </div>
       </div>
       <div class="card">
         <div class="icon"><i class="el-icon-warning" /></div>
         <div class="title">进出正常占比</div>
-        <div class="value">{{ normalRate }}%<span class="trend">环比 ↑2%</span></div>
+        <div class="value">
+          {{ normalRate }}%
+          <span class="trend">{{ getTrendText(ringRatio.ratio) }}</span>
+        </div>
       </div>
     </div>
 
     <!-- 图表区域 -->
     <div class="charts-container">
-      <!-- 左侧：进入单位分布 -->
+      <!-- 左侧：进入单位分布（饼图） -->
       <div class="chart-wrapper">
         <h3>进入单位分布</h3>
         <div class="chart-content">
-          <div class="pie-chart">
-            <div class="pie" :style="{ '--percent': piePercent }" />
-            <div class="legend">
-              <div v-for="(item, idx) in pieData" :key="idx" class="item">
-                <span class="color" :style="{ backgroundColor: item.color }" />
-                <span>{{ item.name }} {{ item.value }}</span>
-              </div>
-            </div>
-          </div>
+          <div ref="pieChart" class="echart" style="width: 100%; height: 300px;" />
           <div class="table">
             <el-table :data="unitTableData" border style="width: 100%">
               <el-table-column prop="name" label="单位" width="120" />
-              <el-table-column prop="count" label="人员数量" width="120" />
-              <el-table-column prop="percent" label="占比" width="100" />
+              <el-table-column prop="count" label="人员数量" width="100" />
+              <el-table-column prop="percent" label="占比" width="80" />
             </el-table>
           </div>
         </div>
       </div>
 
-      <!-- 右侧：申请人次数 -->
+      <!-- 右侧：申请人次数（柱状图） -->
       <div class="chart-wrapper">
         <h3>申请人次数</h3>
-        <div class="bar-chart">
-          <div v-for="(item, idx) in barData" :key="idx" class="bar-item">
-            <div class="label">{{ item.name }}</div>
-            <div class="bar" :style="{ width: `${item.width}%` }">
-              <div class="value">{{ item.value }}</div>
-            </div>
-          </div>
-        </div>
+        <div ref="barChart" class="echart" style="width: 100%; height: 300px;" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import * as echarts from 'echarts'
+import { summaryApi } from '@/api/record'
+
+const TIME_RANGE_MAP = {
+  '本周': 'this_week',
+  '本月': 'this_month',
+  '本年': 'this_year',
+  '上一周': 'last_week',
+  '上个月': 'last_month'
+}
+
 export default {
   name: 'PersonnelSummary',
   data() {
     return {
       timeRange: '本月',
-      dateRange: ['2025-04-01', '2025-04-21'],
-      totalPeople: 300,
-      totalTimes: 280,
-      unitCount: 200,
-      normalRate: 90,
-
-      pieData: [
-        { name: '联通', value: 100, color: '#8d72e6' },
-        { name: '华为', value: 50, color: '#f56c6c' },
-        { name: '联想', value: 40, color: '#409eff' },
-        { name: 'H3C', value: 30, color: '#67c234' },
-        { name: '中国移动', value: 20, color: '#e6a23c' },
-        { name: '中国联通', value: 15, color: '#909399' }
-      ],
-      unitTableData: [
-        { name: '联通', count: 100, percent: '33%' },
-        { name: '华为', count: 50, percent: '17%' },
-        { name: '联想', count: 40, percent: '17%' },
-        { name: 'H3C', count: 30, percent: '17%' },
-        { name: '中国移动', count: 20, percent: '17%' },
-        { name: '中国联通', count: 15, percent: '17%' }
-      ],
-      barData: [
-        { name: '张三', value: 48, width: 70 },
-        { name: '李四', value: 42, width: 60 },
-        { name: '王五', value: 35, width: 50 },
-        { name: '齐欢', value: 20, width: 29 },
-        { name: '齐欢', value: 13, width: 19 },
-        { name: '齐欢', value: 8, width: 11 }
-      ]
+      dateRange: [],
+      totalPeople: 0,
+      totalTimes: 0,
+      unitCount: 0,
+      normalRate: 0,
+      ringRatio: { people: 0, entries: 0, unit: 0, ratio: 0 },
+      pieData: [],
+      unitTableData: [],
+      barData: []
     }
   },
-  computed: {
-    piePercent() {
-      const total = this.pieData.reduce((sum, item) => sum + item.value, 0)
-      return (this.pieData[0].value / total) * 100
-    }
+  async created() {
+    await this.queryData()
+  },
+  mounted() {
+    this.initCharts()
+    window.addEventListener('resize', this.handleResize)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
+    this.disposeCharts()
   },
   methods: {
-    queryData() {
-      console.log('查询数据:', this.dateRange)
-      // 这里可以调用 API 获取真实数据
+    initCharts() {
+      this.pieChart = echarts.init(this.$refs.pieChart)
+      this.barChart = echarts.init(this.$refs.barChart)
+      this.updateCharts()
     },
+    disposeCharts() {
+      this.pieChart?.dispose()
+      this.barChart?.dispose()
+    },
+    handleResize() {
+      this.pieChart?.resize()
+      this.barChart?.resize()
+    },
+    updateCharts() {
+      // 饼图
+      const pieOption = {
+        tooltip: {
+          trigger: 'item',
+          formatter: '{a} <br/>{b}: {c}人 ({d}%)'
+        },
+        legend: {
+          show: true,
+          orient: 'horizontal',
+          left: 'left',
+          top: '20px',
+          data: this.pieData.map(item => ({
+            name: item.name,
+            icon: 'circle',
+            textStyle: { color: '#333' }
+          }))
+        },
+        series: [
+          {
+            name: '单位分布',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{b}: {c}',
+              color: '#333',
+              fontSize: 12,
+              lineHeight: 18
+            },
+            labelLine: {
+              show: true,
+              length: 10,
+              length2: 20,
+              smooth: true
+            },
+            itemStyle: {
+              borderRadius: 4,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: '14',
+                fontWeight: 'bold',
+                color: '#333'
+              }
+            },
+            data: this.pieData.map(item => ({
+              name: item.name,
+              value: item.value,
+              itemStyle: { color: item.color }
+            }))
+          }
+        ]
+      }
+      this.pieChart.setOption(pieOption, true)
+
+      // 柱状图
+      // 柱状图（堆叠）
+      const barOption = {
+        title: {
+          text: '申请人次数',
+          left: 'left',
+          top: '10px',
+          textStyle: {
+            fontSize: 16,
+            fontWeight: 'bold'
+          }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          formatter: (params) => {
+            const completed = params[0]?.value || 0
+            const pending = params[1]?.value || 0
+            const total = completed + pending
+            return `
+        <div style="padding: 8px; font-size: 12px;">
+          <p><strong>${params[0]?.name}</strong></p>
+          <p style="color: #8d72e6;">● 已入场+已离场：${completed}次</p>
+          <p style="color: #f56c6c;">● 未入场：${pending}次</p>
+          <p><strong>总计：${total}次</strong></p>
+        </div>
+      `
+          }
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '10%',
+          top: '15%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          name: '次数',
+          nameLocation: 'middle',
+          nameGap: 20,
+          axisLabel: {
+            formatter: '{value}次'
+          }
+        },
+        yAxis: {
+          type: 'category',
+          data: this.barData.map(item => item.name),
+          axisTick: { show: false }
+        },
+        legend: {
+          show: true,
+          data: ['已入场+已离场', '未入场'],
+          top: '10px',
+          right: '10px'
+        },
+        series: [
+          {
+            name: '已入场+已离场',
+            type: 'bar',
+            stack: 'total',
+            barWidth: '60%',
+            itemStyle: { color: '#8d72e6' },
+            label: {
+              show: true,
+              position: 'insideRight',
+              color: '#fff',
+              fontSize: 12,
+              formatter: '{c}次'
+            },
+            data: this.barData.map(item => item.completed)
+          },
+          {
+            name: '未入场',
+            type: 'bar',
+            stack: 'total',
+            barWidth: '60%',
+            itemStyle: { color: '#f56c6c' },
+            label: {
+              show: true,
+              position: 'insideRight',
+              color: '#fff',
+              fontSize: 12,
+              formatter: '{c}次'
+            },
+            data: this.barData.map(item => item.pending)
+          }
+        ]
+      }
+      this.barChart.setOption(barOption, true)
+    },
+
+    async queryData() {
+      const params = {}
+      if (this.dateRange && this.dateRange.length === 2) {
+        params.start_date = this.dateRange[0]
+        params.end_date = this.dateRange[1]
+      } else {
+        params.period = TIME_RANGE_MAP[this.timeRange]
+      }
+
+      try {
+        const [cardRes, unitRes, applicantRes] = await Promise.all([
+          summaryApi.getCards(params),
+          summaryApi.getUnitDistribution(params),
+          summaryApi.getApplicantCount(params)
+        ])
+
+        // === 卡片数据 ===
+        const cardData = cardRes.data
+        this.totalPeople = cardData.total_people || 0
+        this.totalTimes = cardData.total_entries || 0
+        this.unitCount = cardData.total_unit || 0
+        this.normalRate = parseFloat(cardData.normal_ratio_percent)?.toFixed(1) || '0.0'
+        this.ringRatio = cardData.ring_ratio || {}
+
+        // === 单位分布 ===
+        const unitList = unitRes.data.data || []
+        const COLORS = ['#8d72e6', '#f56c6c', '#409eff', '#67c234', '#e6a23c', '#909399']
+        this.pieData = unitList.map((item, index) => ({
+          name: item.unit,
+          value: item.count,
+          percent: item.percentage,
+          color: COLORS[index % COLORS.length]
+        }))
+
+        this.unitTableData = unitList.map(item => ({
+          name: item.unit,
+          count: item.count,
+          percent: `${item.percentage}%`
+        }))
+
+        // === 申请人次数 ===
+        const applicantList = applicantRes.data.data || []
+        this.barData = applicantList.map(item => ({
+          name: item.name,
+          completed: item.completed || 0, // 已完成（已入场+已离场）
+          pending: item.pending || 0 // 未入场
+        }))
+
+        // 更新图表
+        if (this.pieChart && this.barChart) {
+          this.updateCharts()
+        }
+      } catch (error) {
+        this.$message.error('加载汇总数据失败')
+        console.error(error)
+      }
+    },
+
     reset() {
       this.timeRange = '本月'
-      this.dateRange = ['2025-04-01', '2025-04-21']
+      this.dateRange = []
+      this.queryData()
+    },
+
+    getTrendText(value) {
+      if (value == null || value === undefined) return '环比 —'
+      const num = parseFloat(value)
+      if (isNaN(num)) return '环比 —'
+      if (num > 0) return `环比 ↑${num}%`
+      if (num < 0) return `环比 ↓${Math.abs(num)}%`
+      return '环比 —'
     }
   }
 }
@@ -227,91 +449,13 @@ export default {
   gap: 20px;
 }
 
-.pie-chart {
-  flex: 1;
-  position: relative;
-  width: 200px;
-  height: 200px;
-}
-
-.pie {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  clip-path: polygon(50% 50%, 50% 50%, 50% 50%);
-  background: conic-gradient(
-    #8d72e6 0%,
-    #f56c6c 33%,
-    #409eff 50%,
-    #67c234 67%,
-    #e6a23c 83%,
-    #909399 100%
-  );
-}
-
-.legend {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.legend .item {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  color: #666;
-}
-
-.legend .color {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  margin-right: 5px;
-}
-
 .table {
   flex: 1;
   min-width: 300px;
 }
 
-.bar-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.bar-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-}
-
-.bar-item .label {
-  width: 60px;
-  text-align: right;
-  color: #666;
-}
-
-.bar-item .bar {
-  flex: 1;
-  height: 20px;
-  background: linear-gradient(to right, #8d72e6, #f56c6c);
-  border-radius: 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.bar-item .bar .value {
-  position: absolute;
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-size: 12px;
-  background: rgba(0,0,0,0.6);
-  padding: 0 5px;
-  border-radius: 3px;
+.echart {
+  width: 100%;
+  height: 300px;
 }
 </style>
