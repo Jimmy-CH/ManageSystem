@@ -300,7 +300,7 @@ export default {
         params.start_date = this.dateRange[0]
         params.end_date = this.dateRange[1]
       } else {
-        params.time_range = TIME_RANGE_MAP[this.timeRange]
+        params.period = TIME_RANGE_MAP[this.timeRange]
       }
 
       try {
