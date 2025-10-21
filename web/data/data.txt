@@ -1,0 +1,28 @@
+# 71 定时任务
+0 */1 * * * flock -xn /tmp/cleandisk.lock -c 'sh /home/deploy/clean_disk.sh'
+
+# 同步cmdb的数据
+12 5 * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python manage.py sync_cmdb -c product >> /tmp/sync_c                 mdb.log 2>&1 &
+
+# 定时更新漏洞属性
+0 * * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python manage.py update_vuln_attrs
+
+# 同步ci的项目列表
+0 * * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python3 manage.py sync_cicd -c project >> /tmp/sync_c                 icd.log 2>&1 &
+
+
+# 199 定时任务
+#Ansible: Clean Log
+0 */1 * * * flock -xn /tmp/cleandisk.lock -c 'sh /home/deploy/clean_disk.sh'
+
+# 备份盾数据库
+0 10 * * * source /etc/profile && cd /opt/application/xd-sec-api/app/shell && sh db_backup.sh
+
+# 更新nvd的cve列表，每天更新一次，获取所有列表
+#12 4 * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python manage.py sync_nvd_cve -c list >> /tmp/sync_nvd_cve_list.log 2>&1 &
+# 更新nvd的cve详情，每天更新一次, 不需要更新所有数据的详情，只更新最近三天
+#12 6 * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python manage.py sync_nvd_cve -c detail >> /tmp/sync_nvd_cve_detail.log 2>&1 &
+# 同步cve漏洞列表
+12 6 * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python3 manage.py sync_cve_new
+# 同步斗象漏洞盒子的相关漏洞数据落地到本地漏洞库
+0 * * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python manage.py sync_vul_box_vul >> /tmp/sync_vul_box_vul.log 2>&1 &
