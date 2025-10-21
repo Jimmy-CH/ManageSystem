@@ -5,8 +5,10 @@ __all__ = ['EmployeeFilter', 'OrgFilter']
 
 
 class EmployeeFilter(FilterSet):
-    # 仅自定义非 exact 查询
-    # （当前都是 exact，所以其实可以全删，但保留结构便于后续扩展）
+    # 自定义前端参数名，映射到正确的模型路径
+    deptcode = CharFilter(field_name='dept_id', lookup_expr='exact')
+    pk_deptdoc = CharFilter(field_name='dept__id', lookup_expr='exact')
+
     class Meta:
         model = Employee
         fields = {
@@ -15,8 +17,6 @@ class EmployeeFilter(FilterSet):
             'psnname': ['exact'],
             'email': ['exact'],
             'mobile': ['exact'],
-            'pk_deptdoc': ['exact'],
-            'deptcode': ['exact'],
         }
 
 
