@@ -130,6 +130,8 @@ INSTALLED_APPS = [
     'system',
     'channels',
     'record',
+    'basic',
+    'xc'
 ]
 
 # DRF
@@ -309,4 +311,10 @@ else:
 
 AUTH_USER_MODEL = 'users.User'
 ENCRYPTION_KEY = 'wngqcvtz9Su2mU1VGQhXbvmzEioE-2oONQ9UEqL9-bg='
+
+# 签发认证信息配置
+SIGN_CIPHER_KEY = 'Sl^i+U!qIJhr!O3uW*yn^mud9_J_+$F9'
+SIGN_HTTP_NAME = 'HTTP_AUTHORIZATION'
+SIGN_HTTP_NAME_EXTRA = 'HTTP_XD_TOKEN'
+SIGN_SUBSCRIPTION_NAME = 'token'
 

@@ -2,8 +2,12 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import json
 import base64
+import random
 
-AES_LENGTH = 16
+
+AES_LENGTH = 16  # AEC.key_size
+AES_KEY = 'yTkLE&V#_)Dqylun9Ye#vvpcZ5V_*8^r'
+CHAR_POOL = '1234567890-=!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'
 
 
 class AESCipher:
@@ -35,3 +39,11 @@ class AESCipher:
         decrypted_padded = self.cipher.decrypt(cipher_bytes)
         plain_text = unpad(decrypted_padded, AES_LENGTH).decode('utf-8')
         return json.loads(plain_text)
+
+    @staticmethod
+    def key(length=AES_LENGTH):
+        _key = ''
+        _max = len(CHAR_POOL) - 1
+        for i in range(length):
+            _key += CHAR_POOL[random.randint(0, _max)]
+        return _key
