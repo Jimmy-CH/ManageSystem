@@ -263,53 +263,57 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGS_ROOT = Path(BASE_DIR / "logs")
-LOGS_ROOT.mkdir(exist_ok=True)
-LOG_SIZE = 100 * 1024 * 1024  # 日志轮转大小（100MB）
-LOG_BACKUP_COUNT = 30  # 保留30个备份
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
 
-# 自定义日志格式
-if DEBUG:
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'level': 'DEBUG',
-            },
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
         },
-        'loggers': {
-            'django.request': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False},
-            'django.db.backends': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
-            '': {'handlers': ['console'], 'level': 'DEBUG'},  # ← 所有 logger 都打印到终端
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
         },
-    }
-else:
-    # 生产只记录 ERROR 到文件，不打印到控制台
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'file': {
-                'level': 'ERROR',
-                'class': 'logging.FileHandler',
-                'filename': LOGS_ROOT / 'error.log',
-                'formatter': 'verbose',
-            },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
-        'loggers': {
-            'django.request': {
-                'handlers': ['file'],
-                'level': 'ERROR',
-                'propagate': False,
-            },
-            '': {
-                'handlers': ['file'],
-                'level': 'ERROR',
-            },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        }
+    },
+    'root': {
+        'handlers': ['console'],
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
         },
-    }
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'ms': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
 
 AUTH_USER_MODEL = 'users.User'
 ENCRYPTION_KEY = 'wngqcvtz9Su2mU1VGQhXbvmzEioE-2oONQ9UEqL9-bg='
