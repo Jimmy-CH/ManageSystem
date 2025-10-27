@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import UserViewSet, RoleViewSet, CustomPermissionViewSet, RegisterView, LoginView, LogoutView, MeView, \
-    CustomPermissionCreateView
+    CustomPermissionCreateView, QRCodeAPIView
 
 router = DefaultRouter()
 router.register(r'user', UserViewSet, basename='user')
@@ -15,4 +15,7 @@ urlpatterns = [
     path('info/', MeView.as_view(), name='info'),
     path('permission/', CustomPermissionCreateView.as_view(), name='permission'),
     path('', include(router.urls)),
+    path('qr/', QRCodeAPIView.as_view(), name='generate_qr'),
+
 ]
+

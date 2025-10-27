@@ -1,3 +1,5 @@
+import io
+import qrcode
 import os
 import logging
 import pandas as pd
@@ -22,9 +24,10 @@ from .models import User, Role, CustomPermission
 from .serializers import UserSerializer, RoleSerializer, CustomPermissionSerializer, RegisterSerializer, \
     CustomTokenObtainPairSerializer
 from utils import StandardResponse
+from urllib.parse import urlparse
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('ms')
 
 
 class CustomPermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -321,3 +324,49 @@ class CustomPermissionCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+
+
+class QRCodeAPIView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []  # 如果不需要认证
+
+    def get(self, request, *args, **kwargs):
+        data = request.query_params.get('data')
+        if not data:
+            return StandardResponse(
+                message="Missing 'data' parameter",
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not self.is_valid_url(data):
+            return StandardResponse(
+                message="Only valid HTTP/HTTPS URLs are allowed",
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        response = HttpResponse(buffer.getvalue(), content_type="image/png")
+        response["Content-Disposition"] = 'inline; filename="qrcode.png"'
+        return response
+
+    def is_valid_url(self, url):
+        try:
+            result = urlparse(url)
+            return all([result.scheme in ('http', 'https'), result.netloc])
+        except Exception as e:
+            logger.error(f'error: {e}')
+            return False
+
