@@ -132,7 +132,8 @@ INSTALLED_APPS = [
     'channels',
     'record',
     'basic',
-    'xc'
+    'xc',
+    'idc',
 ]
 
 # DRF
