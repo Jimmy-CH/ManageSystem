@@ -1,5 +1,4 @@
 import json
-import pytz
 import datetime
 import pandas as pd
 from django.views import View
@@ -9,10 +8,10 @@ from rest_framework import viewsets
 
 from common.pagination import StandardResultsSetPagination
 from utils.cipher import AESCipher
-from .models import ProcessRecord, EntryLog, OAInfo, OAPerson
-from .serializers import ProcessRecordSerializer, EntryLogSerializer, OAInfoSerializer, OAPersonSerializer, \
-    ProcessRecordBatchRegisterSerializer
-from .filters import ProcessRecordFilter, OAInfoFilter, OAPersonFilter
+from record.models import ProcessRecord, EntryLog, OAInfo, OAPerson
+from record.serializers import ProcessRecordSerializer, EntryLogSerializer, OAInfoSerializer, OAPersonSerializer, \
+    ProcessRecordBatchRegisterSerializer, ProcessRecordDetailSerializer
+from record.filters import ProcessRecordFilter, OAInfoFilter, OAPersonFilter
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
@@ -40,9 +39,12 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='register')
     def register(self, request):
         """
-        批量手动登记多人进出记录（紧急登记）
+        批量手动登记多人进出记录 + 入场操作
         """
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'request': request}
+        )
         if serializer.is_valid():
             created_records = serializer.save()
             return Response({
@@ -57,20 +59,8 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
     def export(self, request):
         queryset = self.filter_queryset(self.get_queryset())
 
-        # 获取东八区时区
-        shanghai_tz = pytz.timezone('Asia/Shanghai')
-
         data = []
         for record in queryset:
-            def localize_dt(dt):
-                """将带时区的 datetime 转为东八区 naive 时间；若为 None 则返回 None"""
-                if dt is None:
-                    return None
-                if timezone.is_aware(dt):
-                    # 转换为东八区时间，然后移除时区信息
-                    return dt.astimezone(shanghai_tz).replace(tzinfo=None)
-                return dt
-
             data.append({
                 "申请人": record.applicant,
                 "人员姓名": record.person_name,
@@ -80,26 +70,24 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
                 "证件号码": record.id_number,
                 "人员单位": record.unit,
                 "人员部门": record.department,
-                "登记状态": dict(ProcessRecord.STATUS_CHOICES).get(record.registration_status,
-                                                                   record.registration_status),
-                "申请进入时间": localize_dt(record.apply_enter_time),
-                "申请离开时间": localize_dt(record.apply_leave_time),
-                "实际进入时间": localize_dt(record.entered_time),
-                "实际离开时间": localize_dt(record.exited_time),
+                "登记状态": dict(ProcessRecord.STATUS_CHOICES).get(record.registration_status, record.registration_status),
+                "申请进入时间": record.apply_enter_time,
+                "申请离开时间": record.apply_leave_time,
+                "实际进入时间": record.entered_time,
+                "实际离开时间": record.exited_time,
                 "进出次数": record.enter_count,
                 "陪同人": record.companion,
                 "进入原因": record.reason,
                 "携带物品": record.carried_items,
                 "门禁卡状态": dict(ProcessRecord.CARD_STATUS_CHOICES).get(record.card_status, record.card_status),
                 "门禁卡类型": dict(ProcessRecord.CARD_TYPE_CHOICES).get(record.card_type, record.card_type),
-                "证件质押状态": dict(ProcessRecord.PLEDGED_STATUS_CHOICES).get(record.pledged_status,
-                                                                               record.pledged_status),
+                "证件质押状态": dict(ProcessRecord.PLEDGED_STATUS_CHOICES).get(record.pledged_status, record.pledged_status),
                 "备注": record.remarks,
                 "关联OA流程": record.oa_link,
                 "是否紧急": "是" if record.is_emergency else "否",
                 "是否正常": "是" if record.is_normal else "否",
                 "是否关联OA": "是" if record.is_linked else "否",
-                "创建时间": localize_dt(record.create_time),
+                "创建时间": record.create_time,
             })
 
         df = pd.DataFrame(data)
@@ -125,10 +113,13 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
+        user_info = request.user
+        operator_code = user_info.get('uuid', 'admin')
+        operator_name = user_info.get('user_name', 'admin')
 
         companion = data.get('companion', '无')
         card_status = int(data.get('card_status', 1))
-        card_type = int(data.get('card_type', 1)) if card_status == 2 else 1
+        card_type = int(data.get('card_type', 0)) if card_status == 2 else 0
         pledged_status = int(data.get('pledged_status', 1))
         id_type = int(data.get('id_type', 0)) if pledged_status == 2 else 0
 
@@ -137,7 +128,8 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
             process_record=record,
             entered_time=timezone.now(),
             create_time=timezone.now(),
-            create_user_name=request.user.username or 'admin',
+            create_user_code=operator_code,
+            create_user_name=operator_name,
             card_status=card_status,
             card_type=card_type,
             pledged_status=pledged_status,
@@ -150,11 +142,9 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         # 更新主记录为“已入场”，并更新 entered_time 为最新
         record.registration_status = 2
         record.entered_time = entry_log.entered_time
-        record.companion = companion
-        record.card_status = card_status
-        record.card_type = card_type
-        record.pledged_status = pledged_status
-        record.id_type = id_type
+        record.enter_count += 1
+        record.change_user_code = operator_code
+        record.change_user_name = operator_name
         record.save()
 
         return Response({
@@ -174,6 +164,9 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
+        user_info = request.user
+        operator_code = user_info.get('uuid', 'admin')
+        operator_name = user_info.get('user_name', 'admin')
 
         exit_condition = data.get('exit_condition', 'normal')
         remarks = data.get('remarks', '').strip()
@@ -212,38 +205,44 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
                 "msg": "入场时未质押，离场质押状态只能是【未质押】或【已归还】"
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # 更新主记录为“已离场”，并更新 exited_time 为最新
+        # 离场登记后，如【门禁卡信息=未归还】或【证件质押=未归还】或【离场情况=异常】时，则在列表的离场状态打标签【异】
+        is_abnormal_exit = (
+                exit_condition == "abnormal" or
+                new_card_status == 4 or  # CARD_STATUS_CHOICES 中 4 = "未归还"
+                new_pledged_status == 4  # PLEDGED_STATUS_CHOICES 中 4 = "未归还"
+        )
+
         # 创建离开日志
         entry_log = EntryLog.objects.create(
             process_record=record,
             exited_time=timezone.now(),
             create_time=timezone.now(),
-            create_user_name=request.user.username or 'admin',
+            create_user_code=operator_code,
+            create_user_name=operator_name,
             card_status=new_card_status,
             card_type=latest_entry.card_type,
             pledged_status=new_pledged_status,
             id_type=latest_entry.id_type,
             remarks=remarks,
             companion=latest_entry.companion,
-            is_normal=True if exit_condition == 'normal' else False,
+            is_normal=False if is_abnormal_exit else True,
             operation="离场"
         )
 
-        # 更新主记录为“已离场”，并更新 exited_time 为最新
-        if entry_log.is_normal:
-            record.registration_status = 3
-            record.exited_time = entry_log.exited_time
-            record.card_status = new_card_status if record.card_status != 1 else 1
-            record.pledged_status = new_pledged_status if record.pledged_status != 1 else 1
-            record.remarks = remarks
-            record.save()
-        else:
+        if is_abnormal_exit:
             # 有异常进出日志 则记为异常
             record.registration_status = 3
             record.exited_time = entry_log.exited_time
-            record.card_status = new_card_status if record.card_status != 1 else 1
-            record.pledged_status = new_pledged_status if record.pledged_status != 1 else 1
             record.is_normal = False
-            record.remarks = remarks
+            record.change_user_code = operator_code
+            record.change_user_name = operator_name
+            record.save()
+        else:
+            record.registration_status = 3
+            record.exited_time = entry_log.exited_time
+            record.change_user_code = operator_code
+            record.change_user_name = operator_name
             record.save()
 
         return Response({
@@ -283,6 +282,10 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         if not oa_info_id:
             return Response({"error": "oa_info_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        user_info = request.user
+        operator_code = user_info.get('uuid', 'admin')
+        operator_name = user_info.get('user_name', 'admin')
+
         try:
             oa_info = OAInfo.objects.get(id=oa_info_id)
         except OAInfo.DoesNotExist:
@@ -291,8 +294,10 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         # 使用事务确保一致性
         with transaction.atomic():
             # 更新 ProcessRecord
-            record.change_user_name = request.user.username or 'admin'
+            record.change_user_code = operator_code
+            record.change_user_name = operator_name
             record.oa_link = oa_info.oa_link
+            record.oa_link_info = oa_info.oa_link_info
             record.is_linked = True
             record.applicant = oa_info.applicant
             record.applicant_time = oa_info.applicant_time
@@ -306,6 +311,12 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         return Response({
             "msg": "关联OA成功",
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='details')
+    def details(self, request, pk=None):
+        record = get_object_or_404(ProcessRecord, pk=pk)
+        serializer = ProcessRecordDetailSerializer(record, context={'request': request})
+        return Response(serializer.data)
 
 
 def timestamp_ms_to_datetime(ts_ms):
@@ -324,7 +335,6 @@ class EntryLogViewSet(viewsets.ModelViewSet):
 
 
 class OAInfoViewSet(viewsets.ModelViewSet):
-    # queryset = OAInfo.objects.prefetch_related('persons').filter(is_linked=False)
     queryset = OAInfo.objects.filter(is_linked=False)
     serializer_class = OAInfoSerializer
     filterset_class = OAInfoFilter
@@ -454,12 +464,12 @@ class SubmitEntryApplicationView(View):
                         apply_leave_time=leave_time,
                         entered_time=None,
                         exited_time=None,
-                        enter_count=1,
+                        enter_count=0,
                         companion=companion,
                         reason=reason,
                         carried_items=carried_items,
                         card_status=1,  # 无需发卡
-                        card_type=1,
+                        card_type=0,
                         pledged_status=1,  # 未质押
                         remarks="",
                         oa_link=oa_link,
@@ -501,7 +511,7 @@ class SummaryCardsView(APIView):
             registration_status__in=[2, 3]  # 已入场、已离场
         )
 
-        total_people = current_process_records.values('person_name', 'phone_number').distinct().count()
+        total_people = current_process_records.values('id').count()
         total_entries = EntryLog.objects.filter(
             process_record__in=current_process_records,
             entered_time__isnull=False
@@ -596,7 +606,7 @@ class UnitDistributionView(APIView):
 
         # 按单位分组，统计去重人数（person_name + phone_number）
         unit_stats = process_records.values('unit').annotate(
-            count=Count('person_name', distinct=True)  # 去重人数
+            count=Count('id', distinct=True)
         ).order_by('-count')
 
         total_people = sum(item['count'] for item in unit_stats) or 1  # 防止除零
@@ -664,3 +674,4 @@ class ApplicantCountView(APIView):
         ]
 
         return Response({"data": result})
+

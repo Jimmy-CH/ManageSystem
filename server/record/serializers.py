@@ -1,6 +1,8 @@
 
 from rest_framework import serializers
 from .models import ProcessRecord, EntryLog, OAInfo, OAPerson
+from django.utils import timezone
+from django.db import transaction
 
 
 class EntryLogSerializer(serializers.ModelSerializer):
@@ -138,6 +140,7 @@ class PersonnelItemSerializer(serializers.Serializer):
     card_status = serializers.ChoiceField(choices=ProcessRecord.CARD_STATUS_CHOICES, default=1)
     card_type = serializers.ChoiceField(choices=ProcessRecord.CARD_TYPE_CHOICES, default=1)
     pledged_status = serializers.ChoiceField(choices=ProcessRecord.PLEDGED_STATUS_CHOICES, default=1)
+    pledged_id_type = serializers.ChoiceField(choices=ProcessRecord.ID_TYPE_CHOICES, default=0)
 
 
 class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
@@ -145,7 +148,7 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
     apply_leave_time = serializers.DateTimeField(required=False)
     reason = serializers.CharField(required=False, allow_blank=True)
     carried_items = serializers.CharField(required=False, allow_blank=True)
-    companion = serializers.CharField(max_length=128, default="无")
+    companion = serializers.CharField(max_length=128, default="无", allow_blank=True)
     remarks = serializers.CharField(required=False, allow_blank=True)
     personnel = PersonnelItemSerializer(many=True)
 
@@ -157,47 +160,96 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        personnel_data = validated_data.pop('personnel')
-        records = []
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            user_info = request.user
+            operator_code = user_info.get('uuid', 'admin')
+            operator_name = user_info.get('user_name', 'admin')
+        else:
+            operator_code = 'system'
+            operator_name = '系统'
 
-        # 公共字段
+        personnel_data = validated_data.pop('personnel')
+        now = timezone.now()
+
         common_fields = {
             'reason': validated_data.get('reason'),
             'carried_items': validated_data.get('carried_items'),
             'companion': validated_data.get('companion', '无'),
             'remarks': validated_data.get('remarks'),
-            'apply_enter_time': validated_data.get('apply_enter_time'),
-            'apply_leave_time': validated_data.get('apply_leave_time'),
-            # 紧急登记标志
+            'apply_enter_time': validated_data.get('apply_enter_time') or now,
+            'apply_leave_time': validated_data.get('apply_leave_time') or (now + timezone.timedelta(hours=24)),
             'is_emergency': True,
-            'is_normal': False,
             'is_linked': False,
-            'registration_status': 1,  # 未入场
+            'registration_status': 2,
+            'create_user_code': operator_code,
+            'create_user_name': operator_name,
+            'change_user_code': operator_code,
+            'change_user_name': operator_name,
+            'entered_time': now,
+            'enter_count': 1,
         }
 
-        from django.utils import timezone
-        now = timezone.now()
-        if not common_fields['apply_enter_time']:
-            common_fields['apply_enter_time'] = now
-        if not common_fields['apply_leave_time']:
-            common_fields['apply_leave_time'] = now + timezone.timedelta(hours=24)
+        created_records = []
 
-        for person in personnel_data:
-            record = ProcessRecord(
-                person_name=person['person_name'],
-                phone_number=person.get('phone_number'),
-                person_type=person['person_type'],
-                id_type=person['id_type'],
-                id_number=person.get('id_number'),
-                unit=person.get('unit'),
-                department=person.get('department'),
-                card_status=person['card_status'],
-                card_type=person['card_type'],
-                pledged_status=person['pledged_status'],
-                **common_fields
-            )
-            records.append(record)
+        with transaction.atomic():
+            for person in personnel_data:
+                # 创建并保存 ProcessRecord（立即获得 id）
+                record = ProcessRecord(
+                    person_name=person['person_name'],
+                    phone_number=person.get('phone_number'),
+                    person_type=person['person_type'],
+                    id_type=person['id_type'],
+                    id_number=person.get('id_number'),
+                    unit=person.get('unit'),
+                    department=person.get('department'),
+                    card_status=person['card_status'],
+                    card_type=person['card_type'],
+                    pledged_status=person['pledged_status'],
+                    **common_fields
+                )
+                record.save()
+                created_records.append(record)
 
-        # 批量创建
-        created_records = ProcessRecord.objects.bulk_create(records)
+                # 立即创建 EntryLog（此时 record 有 id）
+                EntryLog.objects.create(
+                    process_record=record,
+                    entered_time=now,
+                    create_time=now,
+                    create_user_code=operator_code,
+                    create_user_name=operator_name,
+                    card_status=record.card_status,
+                    card_type=record.card_type if record.card_status == 2 else 0,
+                    pledged_status=record.pledged_status,
+                    id_type=person['pledged_id_type'] if record.pledged_status == 2 else 0,
+                    companion=record.companion,
+                    remarks=record.remarks,
+                    operation="入场"
+                )
+
         return created_records
+
+
+class ProcessRecordDetailSerializer(serializers.ModelSerializer):
+    latest_entry = serializers.SerializerMethodField()
+    latest_exit = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProcessRecord
+        fields = '__all__'  # 或列出你需要的字段
+
+    def get_latest_entry(self, obj):
+        latest = EntryLog.objects.filter(
+            process_record=obj,
+            operation='入场'
+        ).order_by('-entered_time').first()
+        return EntryLogSerializer(latest, context=self.context).data if latest else None
+
+    def get_latest_exit(self, obj):
+        latest = EntryLog.objects.filter(
+            process_record=obj,
+            operation='离场'
+        ).order_by('-exited_time').first()
+        return EntryLogSerializer(latest, context=self.context).data if latest else None
+
+
