@@ -28,7 +28,7 @@ class ProcessRecordFilter(django_filters.FilterSet):
     # 是否异常
     is_normal = django_filters.CharFilter(method='filter_is_normal')
 
-    # 时间范围：申请时间
+    # 时间范围：申请进入/离开时间
     apply_enter_time_after = django_filters.DateTimeFilter(field_name='apply_enter_time', lookup_expr='gte')
     apply_enter_time_before = django_filters.DateTimeFilter(field_name='apply_enter_time', lookup_expr='lte')
     apply_leave_time_after = django_filters.DateTimeFilter(field_name='apply_leave_time', lookup_expr='gte')
@@ -39,6 +39,10 @@ class ProcessRecordFilter(django_filters.FilterSet):
     entered_time_before = django_filters.DateTimeFilter(field_name='entered_time', lookup_expr='lte')
     exited_time_after = django_filters.DateTimeFilter(field_name='exited_time', lookup_expr='gte')
     exited_time_before = django_filters.DateTimeFilter(field_name='exited_time', lookup_expr='lte')
+
+    # 申请时间 applicant_time
+    applicant_time_after = django_filters.DateTimeFilter(field_name='applicant_time', lookup_expr='gte')
+    applicant_time_before = django_filters.DateTimeFilter(field_name='applicant_time', lookup_expr='lte')
 
     class Meta:
         model = ProcessRecord

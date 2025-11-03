@@ -65,11 +65,13 @@ class ProcessRecord(BaseModel):
     支持常规（OA同步）和紧急（手动添加）两种方式
     """
     PERSON_TYPE_CHOICES = ((1, "内部"), (2, "外部"))
-    ID_TYPE_CHOICES = ((0, "未质押"), (1, "工牌"), (2, "身份证"), (3, "驾驶证"), (4, "护照"))
+    ID_TYPE_CHOICES = ((0, ""), (1, "工牌"), (2, "身份证"), (3, "驾驶证"), (4, "护照"))
     STATUS_CHOICES = ((1, "未入场"), (2, "已入场"), (3, "已离场"), (4, "已废止"))
     CARD_STATUS_CHOICES = ((1, "无需发卡"), (2, "已发卡"), (3, "已归还"), (4, "未归还"))
     PLEDGED_STATUS_CHOICES = ((1, "未质押"), (2, "已质押"), (3, "已归还"), (4, "未归还"))
-    CARD_TYPE_CHOICES = ((1, "卡1"), (2, "卡2"), (3, "卡3"), (4, "卡4"), (5, "卡5"))
+    CARD_TYPE_CHOICES = ((1, "卡1"), (2, "卡2"), (3, "卡3"), (4, "卡4"), (5, "卡5"),
+                         (6, "卡6"), (7, "卡7"), (8, "卡8"), (9, "卡9"), (10, "卡10"),
+                         (0, "无"))
 
     applicant = models.CharField(verbose_name="OA申请人", blank=True, null=True, max_length=50)
     person_name = models.CharField(verbose_name="人员姓名", blank=True, null=True, max_length=50)
@@ -87,12 +89,12 @@ class ProcessRecord(BaseModel):
     apply_leave_time = models.DateTimeField(verbose_name="申请离开日期时间", null=True, blank=True, help_text="由OA自动带出")
     entered_time = models.DateTimeField(verbose_name="实际进入时间", blank=True, null=True, help_text="点击“已进入”时自动填充")
     exited_time = models.DateTimeField(verbose_name="实际离开时间", blank=True, null=True, help_text="点击“已离开”时自动填充")
-    enter_count = models.PositiveSmallIntegerField(verbose_name="实际进出次数", default=1, help_text="可手动修改")
+    enter_count = models.PositiveSmallIntegerField(verbose_name="实际进出次数", default=0, help_text="可手动修改")
     companion = models.CharField(verbose_name="陪同人", max_length=128, default="无", help_text="可填写具体姓名或“无”")
     reason = models.TextField(verbose_name="进入原因", blank=True, null=True, help_text="自动带出OA申请中的进入原因")
     carried_items = models.TextField(verbose_name="携带物品", blank=True, null=True, help_text="自动带出OA申请中的携带物品")
     card_status = models.SmallIntegerField("门禁卡状态", choices=CARD_STATUS_CHOICES, default=1, db_index=False)
-    card_type = models.SmallIntegerField("门禁卡类型", choices=CARD_TYPE_CHOICES, default=1, db_index=False)
+    card_type = models.SmallIntegerField("门禁卡类型", choices=CARD_TYPE_CHOICES, default=0, db_index=False)
     pledged_status = models.SmallIntegerField("证件质押状态", choices=PLEDGED_STATUS_CHOICES, default=1, db_index=False)
     remarks = models.TextField(verbose_name="备注", blank=True, null=True, help_text="异常情况说明：超时、损坏、脏乱差、补流程等")
     oa_link = models.CharField(verbose_name="关联OA流程", max_length=256, blank=True, null=True, help_text="补流程时填写OA申请链接")
@@ -142,14 +144,14 @@ class EntryLog(models.Model):
     )
     create_user_code = models.CharField(max_length=64, blank=True, null=True, verbose_name="创建人工号", default="admin")
     create_user_name = models.CharField(max_length=10, blank=True, null=True, verbose_name="创建人姓名", default="admin")
-    card_status = models.SmallIntegerField("门禁卡状态", choices=((1, "无需发卡"), (2, "已发卡"), (3, "已归还"), (4, "未归还")),
+    card_status = models.SmallIntegerField("门禁卡状态", choices=ProcessRecord.CARD_STATUS_CHOICES,
                                            default=1, db_index=False)
-    card_type = models.SmallIntegerField("门禁卡类型", choices=((1, "卡1"), (2, "卡2"), (3, "卡3"), (4, "卡4"), (5, "卡5")),
-                                         default=1, db_index=False)
-    pledged_status = models.SmallIntegerField("证件质押状态", choices=((1, "未质押"), (2, "已质押"), (3, "已归还"), (4, "未归还")),
+    card_type = models.SmallIntegerField("门禁卡类型", choices=ProcessRecord.CARD_TYPE_CHOICES,
+                                         default=0, db_index=False)
+    pledged_status = models.SmallIntegerField("证件质押状态", choices=ProcessRecord.PLEDGED_STATUS_CHOICES,
                                               default=1, db_index=False)
     id_type = models.SmallIntegerField(verbose_name="证件类型", default=0, help_text="工牌或身份证等",
-                                       choices=((0, "未质押"), (1, "工牌"), (2, "身份证"), (3, "驾驶证"), (4, "护照")))
+                                       choices=ProcessRecord.ID_TYPE_CHOICES)
     remarks = models.TextField(verbose_name="备注", blank=True, null=True,
                                help_text="异常情况说明：超时、损坏、脏乱差、补流程等")
     is_normal = models.BooleanField(verbose_name="是否为正常进出", default=True, help_text="True表示正常进出记录")
