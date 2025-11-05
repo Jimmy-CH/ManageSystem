@@ -8,14 +8,31 @@ UWSGI_INI="$APP_HOME/uwsgi.ini"
 PID_FILE="$APP_HOME/uwsgi.pid"
 # ===========================
 
-# 加载全局环境变量
-source /etc/profile
+# 加载全局环境变量（谨慎使用，可能引入副作用）
+# source /etc/profile
 
-# 检查 uwsgi 是否已在运行
+# 检查必要文件是否存在
+if [ ! -d "$APP_HOME" ]; then
+    echo "ERROR: APP_HOME does not exist: $APP_HOME" >&2
+    exit 1
+fi
+
+if [ ! -x "$UWSGI_BIN" ]; then
+    echo "ERROR: uWSGI executable not found or not executable: $UWSGI_BIN" >&2
+    exit 1
+fi
+
+if [ ! -f "$UWSGI_INI" ]; then
+    echo "ERROR: uWSGI config file not found: $UWSGI_INI" >&2
+    exit 1
+fi
+
+# 检查 uwsgi 是否已在运行（统一函数）
 is_running() {
     if [ -f "$PID_FILE" ]; then
-        local pid=$(cat "$PID_FILE" 2>/dev/null)
-        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        local pid
+        pid=$(cat "$PID_FILE" 2>/dev/null)
+        if [ -n "$pid" ] && [ "$pid" -gt 0 ] 2>/dev/null && kill -0 "$pid" 2>/dev/null; then
             return 0  # 正在运行
         else
             rm -f "$PID_FILE" 2>/dev/null  # 清理无效 PID 文件
@@ -26,60 +43,63 @@ is_running() {
 
 start() {
     echo "Starting uWSGI server..."
-    if [ -f "$PID_FILE" ]; then
-        echo "PID file exists: $PID_FILE. Checking if process is running..."
-        if kill -0 $(cat "$PID_FILE") 2>/dev/null; then
-            echo "uWSGI is already running (PID: $(cat "$PID_FILE"))"
-            exit 1
-        else
-            echo "Stale PID file found. Removing it."
-            rm -f "$PID_FILE"
-        fi
+
+    if is_running; then
+        echo "uWSGI is already running (PID: $(cat "$PID_FILE"))" >&2
+        exit 1
     fi
 
-    cd "$APP_HOME" || { echo "Failed to cd to $APP_HOME"; exit 1; }
+    cd "$APP_HOME" || { echo "ERROR: Failed to cd to $APP_HOME" >&2; exit 1; }
+
+    # 启动 uWSGI（前台启动，由 systemd 或 supervisord 管理时更合适）
+    # 如果你希望后台运行，确保 uwsgi.ini 中有 master = true 和 pidfile 配置
     "$UWSGI_BIN" --ini "$UWSGI_INI"
 
-    # 等待启动完成（简单检查）
-    sleep 2
-    if [ -f "$PID_FILE" ]; then
+    # 等待 PID 文件生成（最多 5 秒）
+    local count=0
+    while [ ! -f "$PID_FILE" ] && [ $count -lt 5 ]; do
+        sleep 1
+        ((count++))
+    done
+
+    if is_running; then
         echo "uWSGI started successfully (PID: $(cat "$PID_FILE"))"
     else
-        echo "uWSGI may have failed to start (no PID file)"
+        echo "ERROR: uWSGI failed to start (PID file not created)" >&2
+        exit 1
     fi
 }
 
 stop() {
     echo "Stopping uWSGI server..."
-    if [ ! -f "$PID_FILE" ]; then
-        echo "PID file not found: $PID_FILE. Is uWSGI running?"
+
+    if ! is_running; then
+        echo "uWSGI is NOT running." >&2
         return 1
     fi
 
-    PID=$(cat "$PID_FILE")
-    if kill -0 "$PID" 2>/dev/null; then
-        echo "Gracefully stopping uWSGI (PID: $PID)..."
-        # 使用 uwsgi --stop 实现优雅退出（触发 reload-mercy）
-        "$UWSGI_BIN" --stop "$PID_FILE"
+    local pid
+    pid=$(cat "$PID_FILE")
 
-        # 等待最多 15 秒
-        for i in {1..15}; do
-            if ! kill -0 "$PID" 2>/dev/null; then
-                echo "uWSGI stopped gracefully."
-                rm -f "$PID_FILE"
-                return 0
-            fi
-            sleep 1
-        done
+    echo "Gracefully stopping uWSGI (PID: $pid)..."
+    "$UWSGI_BIN" --stop "$PID_FILE" >/dev/null 2>&1
 
-        # 超时后强制 kill
-        echo "Graceful stop timed out. Force killing PID $PID..."
-        kill -9 "$PID" 2>/dev/null
-        rm -f "$PID_FILE"
-    else
-        echo "Process not running. Removing stale PID file."
-        rm -f "$PID_FILE"
-    fi
+    # 等待最多 15 秒（兼容非 Bash shell）
+    local i=0
+    while [ $i -lt 15 ]; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "uWSGI stopped gracefully."
+            rm -f "$PID_FILE"
+            return 0
+        fi
+        sleep 1
+        ((i++))
+    done
+
+    # 超时后强制 kill
+    echo "Graceful stop timed out. Force killing PID $pid..."
+    kill -9 "$pid" 2>/dev/null
+    rm -f "$PID_FILE"
 }
 
 restart() {
@@ -88,8 +108,18 @@ restart() {
     start
 }
 
+status() {
+    if is_running; then
+        echo "uWSGI is running (PID: $(cat "$PID_FILE"))."
+        return 0
+    else
+        echo "uWSGI is NOT running."
+        return 1
+    fi
+}
+
 # 主逻辑
-case "$1" in
+case "${1:-}" in
     start)
         start
         ;;
@@ -100,14 +130,15 @@ case "$1" in
         restart
         ;;
     status)
-        if is_running; then
-            echo "uWSGI is running (PID: $(cat "$PID_FILE"))."
-        else
-            echo "uWSGI is NOT running."
-        fi
+        status
+        ;;
+    "")
+        echo "Usage: $0 {start|stop|restart|status}" >&2
+        exit 1
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status}"
+        echo "Invalid command: $1" >&2
+        echo "Usage: $0 {start|stop|restart|status}" >&2
         exit 1
         ;;
 esac
