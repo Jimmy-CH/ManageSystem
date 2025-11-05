@@ -11,6 +11,19 @@ PID_FILE="$APP_HOME/uwsgi.pid"
 # 加载全局环境变量
 source /etc/profile
 
+# 检查 uwsgi 是否已在运行
+is_running() {
+    if [ -f "$PID_FILE" ]; then
+        local pid=$(cat "$PID_FILE" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            return 0  # 正在运行
+        else
+            rm -f "$PID_FILE" 2>/dev/null  # 清理无效 PID 文件
+        fi
+    fi
+    return 1  # 未运行
+}
+
 start() {
     echo "Starting uWSGI server..."
     if [ -f "$PID_FILE" ]; then
@@ -75,6 +88,7 @@ restart() {
     start
 }
 
+# 主逻辑
 case "$1" in
     start)
         start
@@ -85,8 +99,15 @@ case "$1" in
     restart)
         restart
         ;;
+    status)
+        if is_running; then
+            echo "uWSGI is running (PID: $(cat "$PID_FILE"))."
+        else
+            echo "uWSGI is NOT running."
+        fi
+        ;;
     *)
-        echo "Usage: $0 {start|stop|restart}"
+        echo "Usage: $0 {start|stop|restart|status}"
         exit 1
         ;;
 esac
