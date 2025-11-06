@@ -26,3 +26,5 @@
 12 6 * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python3 manage.py sync_cve_new
 # 同步斗象漏洞盒子的相关漏洞数据落地到本地漏洞库
 0 * * * * source /etc/profile && cd /opt/application/xd-sec-api/app && /opt/application/xd-sec-api/venv/bin/python manage.py sync_vul_box_vul >> /tmp/sync_vul_box_vul.log 2>&1 &
+
+
