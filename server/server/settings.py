@@ -120,13 +120,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',
     'django_filters',
     'rest_framework',
     'drf_spectacular',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'silk',
+    'dbbackup',
+    'users',
     'events',
     'system',
     'channels',
@@ -169,9 +170,11 @@ REST_FRAMEWORK = {
 MEDIA_URL = '/media/'
 if platform.system().lower() == 'windows':
     MEDIA_ROOT = r'D:/media'
+    DB_BACKUP_PATH = r'D:/media/backups/mysql'
 else:
     # 项目根目录下的 media/ 文件夹
     MEDIA_ROOT = BASE_DIR / 'media'
+    DB_BACKUP_PATH = '/opt/backups/mysql/'
 
 # JWT 配置（可选自定义）
 SIMPLE_JWT = {
@@ -324,3 +327,10 @@ SIGN_CIPHER_KEY = 'Sl^i+U!qIJhr!O3uW*yn^mud9_J_+$F9'
 SIGN_HTTP_NAME = 'HTTP_AUTHORIZATION'
 SIGN_HTTP_NAME_EXTRA = 'HTTP_XD_TOKEN'
 SIGN_SUBSCRIPTION_NAME = 'token'
+
+
+# 备份存储方式：本地文件系统
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {
+    'location': DB_BACKUP_PATH,  # 自定义备份目录
+}
