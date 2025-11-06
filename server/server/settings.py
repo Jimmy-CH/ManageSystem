@@ -330,7 +330,9 @@ SIGN_SUBSCRIPTION_NAME = 'token'
 
 
 # 备份存储方式：本地文件系统
+DBBACKUP_CLEANUP_KEEP = 7          # 保留最近 7 个数据库备份
+DBBACKUP_CLEANUP_KEEP_MEDIA = 7    # 如果也备份 media
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {
-    'location': DB_BACKUP_PATH,  # 自定义备份目录
+    'location': DB_BACKUP_PATH,    # 自定义备份目录
 }
