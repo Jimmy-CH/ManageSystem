@@ -169,12 +169,18 @@ REST_FRAMEWORK = {
 # 媒体文件配置
 MEDIA_URL = '/media/'
 if platform.system().lower() == 'windows':
-    MEDIA_ROOT = r'D:/media'
-    DB_BACKUP_PATH = r'D:/media/backups/mysql'
+    MEDIA_ROOT = r'D:/media/'
+    DB_BACKUP_PATH = r'D:/media/backups/mysql/'
+    LOG_PATH = r'D:/media/logs/'
 else:
     # 项目根目录下的 media/ 文件夹
     MEDIA_ROOT = BASE_DIR / 'media'
     DB_BACKUP_PATH = '/opt/backups/mysql/'
+    LOG_PATH = '/opt/app/logs/'
+
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(DB_BACKUP_PATH, exist_ok=True)
+os.makedirs(LOG_PATH, exist_ok=True)
 
 # JWT 配置（可选自定义）
 SIMPLE_JWT = {
@@ -266,10 +272,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 确保日志目录存在
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-os.makedirs(LOGS_DIR, exist_ok=True)
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -291,7 +293,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOGS_DIR, 'django.log'),
+            'filename': os.path.join(LOG_PATH, 'django.log'),
             'maxBytes': 5 * 1024 * 1024,
             'backupCount': 5,
             'formatter': 'verbose',
