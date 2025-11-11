@@ -27,6 +27,7 @@ api_patterns = [
     path('record/', include('record.urls')),
     path('basic/', include('basic.urls')),
     path('xc/', include('xc.urls')),
+    path('idc/', include('idc.urls')),
 ]
 
 urlpatterns = [

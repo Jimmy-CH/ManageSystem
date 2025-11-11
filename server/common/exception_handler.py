@@ -1,4 +1,15 @@
 from rest_framework.views import exception_handler
+from django.http import Http404
+from django.db import connections
+from rest_framework import exceptions
+from django.core.exceptions import PermissionDenied
+
+from common import custom_response
+from common import CustomStatus
+
+import logging
+
+logger = logging.getLogger('ms')
 
 
 def custom_exception_handler(exc, context):
@@ -40,3 +51,50 @@ def custom_exception_handler(exc, context):
         }
 
     return response
+
+
+def handler(exc, context):
+    # 回滚数据库事务（保留原有逻辑）
+    for db in connections.all():
+        if db.settings_dict['ATOMIC_REQUESTS'] and db.in_atomic_block:
+            db.set_rollback(True)
+
+    if isinstance(exc, exceptions.ValidationError):
+        detail = exc.detail
+
+        # 情况1：字段级错误（dict）
+        if isinstance(detail, dict):
+            # 提取第一个字段的第一个错误信息（用于 msg）
+            for field_errors in detail.values():
+                if field_errors:
+                    msg = str(field_errors[0])
+                    break
+            else:
+                msg = "请求参数错误"
+            # data 中保留完整错误结构
+            resp = custom_response(code=CustomStatus.VALIDATION_ERROR, msg=msg, data=detail)
+
+        # 情况2：非字典错误（如 list 或 string）
+        elif isinstance(detail, list):
+            msg = str(detail[0]) if detail else "请求参数错误"
+            resp = custom_response(code=CustomStatus.VALIDATION_ERROR, msg=msg, data=detail)
+        else:
+            msg = str(detail)
+            resp = custom_response(code=CustomStatus.VALIDATION_ERROR, msg=msg, data={})
+
+    elif isinstance(exc, PermissionDenied):
+        resp = custom_response(code=CustomStatus.PERMISSION_DENIED, msg="无权访问")
+
+    elif isinstance(exc, exceptions.APIException):
+        # 处理 DRF 内置 API 异常（如 NotFound, MethodNotAllowed 等）
+        resp = custom_response(code=CustomStatus.SERVER_ERROR, msg=str(exc.detail), data=getattr(exc, 'detail', {}))
+
+    elif isinstance(exc, Http404):
+        resp = custom_response(code=CustomStatus.NOT_FOUND, msg="请求地址(资源)不存在")
+
+    else:
+
+        logger.error('Unhandled exception', exc_info=exc)
+        resp = custom_response(code=CustomStatus.SERVER_ERROR, msg="服务器内部错误")
+
+    return resp

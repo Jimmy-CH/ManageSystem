@@ -6,7 +6,6 @@
 
 import os
 from celery import Celery
-from django.conf import settings
 
 # 设置 Django 的 settings 模块
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'manager.settings')
