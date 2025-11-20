@@ -21,13 +21,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 api_patterns = [
-    path('users/', include('users.urls')),
-    path('events/', include('events.urls')),
-    path('system/', include('system.urls')),
-    path('record/', include('record.urls')),
-    path('basic/', include('basic.urls')),
-    path('xc/', include('xc.urls')),
-    path('idc/', include('idc.urls')),
+    path('users/', include('apps.users.urls')),
+    path('events/', include('apps.events.urls')),
+    path('system/', include('apps.system.urls')),
+    path('record/', include('apps.record.urls')),
+    path('basic/', include('apps.basic.urls')),
+    path('xc/', include('apps.xc.urls')),
+    path('idc/', include('apps.idc.urls')),
 ]
 
 urlpatterns = [
