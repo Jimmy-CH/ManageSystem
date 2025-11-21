@@ -9,29 +9,29 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         assets_data = [
             {
-                "name": "Web Server 01",
-                "ip": "192.168.1.10",
+                "name": "Web Server 02",
+                "ip": "10.130.16.135",
                 "port": 22,
-                "username": "root",
-                "password": "secret123!",
+                "username": "testadmin",
+                "password": "U7H8U2Bfmrzd",
                 "os_type": "Linux"
             },
-            {
-                "name": "DB Server 01",
-                "ip": "192.168.1.11",
-                "port": 22,
-                "username": "admin",
-                "password": "dbpass456@",
-                "os_type": "Ubuntu"
-            },
-            {
-                "name": "Jump Host",
-                "ip": "192.168.1.12",
-                "port": 2222,
-                "username": "deploy",
-                "password": "jump789#",
-                "os_type": "CentOS"
-            },
+            # {
+            #     "name": "DB Server 01",
+            #     "ip": "192.168.1.11",
+            #     "port": 22,
+            #     "username": "admin",
+            #     "password": "dbpass456@",
+            #     "os_type": "Ubuntu"
+            # },
+            # {
+            #     "name": "Jump Host",
+            #     "ip": "192.168.1.12",
+            #     "port": 2222,
+            #     "username": "deploy",
+            #     "password": "jump789#",
+            #     "os_type": "CentOS"
+            # },
         ]
 
         created_count = 0
