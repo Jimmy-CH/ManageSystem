@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
 
 
-CONFIG_FILE = BASE_DIR / 'config.yml'  # 或者 settings/config.yml
+CONFIG_FILE = BASE_DIR / 'configs/config.yml'
 
 
 def load_yaml_config():
@@ -127,14 +127,15 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'silk',
     'dbbackup',
-    'users',
-    'events',
-    'system',
+    'apps.users',
+    'apps.events',
+    'apps.system',
     'channels',
-    'record',
-    'basic',
-    'xc',
-    'idc',
+    'apps.record',
+    'apps.basic',
+    'apps.xc',
+    'apps.idc',
+    'apps.cmdb',
 ]
 
 # DRF
@@ -225,15 +226,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'server.wsgi.application'
 # Channels 配置 ASGI 应用程序
 ASGI_APPLICATION = 'server.asgi.application'
-# ====== Django Channels (WebSocket) ======
-if DEBUG:
+# Django Channels (WebSocket)
+if ENVIRONMENT == 'development':
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer'
         }
     }
 else:
-    # 生产环境建议使用 Redis：
+    # 生产环境使用 Redis：
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
