@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# ========== 配置区 ==========
+# 配置区
 APP_HOME="/opt/ManageSystem/server"
 VENV_BIN="$APP_HOME/venv/bin"
 UWSGI_BIN="$VENV_BIN/uwsgi"
 UWSGI_INI="$APP_HOME/uwsgi.ini"
 PID_FILE="$APP_HOME/uwsgi.pid"
-# ===========================
 
-# 加载全局环境变量（谨慎使用，可能引入副作用）
-# source /etc/profile
+# 加载全局环境变量
+source /etc/profile
 
 # 检查必要文件是否存在
 if [ ! -d "$APP_HOME" ]; then

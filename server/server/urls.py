@@ -28,6 +28,7 @@ api_patterns = [
     path('basic/', include('apps.basic.urls')),
     path('xc/', include('apps.xc.urls')),
     path('idc/', include('apps.idc.urls')),
+    path('cmdb/', include('apps.cmdb.urls')),
 ]
 
 urlpatterns = [
