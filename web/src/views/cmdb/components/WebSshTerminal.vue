@@ -61,7 +61,9 @@ export default {
     },
 
     connectWebSocket() {
-      const wsUrl = `ws://localhost:8020/ws/ssh/${this.assetId}/`
+      console.log('Connecting to Menu WebSocket...', process.env.VUE_APP_WS_SSH)
+      const wsUrl = `${process.env.VUE_APP_WS_SSH}${this.assetId}/`
+      console.log(wsUrl)
       this.socket = new WebSocket(wsUrl)
 
       this.socket.onmessage = event => {
