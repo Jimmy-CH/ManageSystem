@@ -226,15 +226,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'server.wsgi.application'
 # Channels 配置 ASGI 应用程序
 ASGI_APPLICATION = 'server.asgi.application'
-# ====== Django Channels (WebSocket) ======
-if DEBUG:
+# Django Channels (WebSocket)
+if ENVIRONMENT == 'development':
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer'
         }
     }
 else:
-    # 生产环境建议使用 Redis：
+    # 生产环境使用 Redis：
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
