@@ -90,6 +90,27 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/cmdb',
+    component: Layout,
+    redirect: '/cmdb/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/cmdb/index.vue'),
+        name: 'CMDB',
+        meta: { title: 'CMDB管理', icon: 'lock' }
+      },
+      {
+        path: '/webssh/:assetId(\\d+)', // 仅匹配数字
+        name: 'WebSshView',
+        component: () => import('@/views/cmdb/WebSshView.vue'),
+        meta: { title: 'WebSSH', icon: 'lock' },
+        props: true,
+        hidden: true
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]
