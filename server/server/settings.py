@@ -158,8 +158,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',       # 搜索
         'rest_framework.filters.OrderingFilter',     # 排序
     ],
-    # 'EXCEPTION_HANDLER': 'common.custom_exception_handler',
-    'EXCEPTION_HANDLER': 'common.handler',
+    'EXCEPTION_HANDLER': 'common.custom_exception_handler',
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',          # 统一日期时间格式
     'DATE_FORMAT': '%Y-%m-%d',                       # 日期格式
     'TIME_FORMAT': '%H:%M:%S',                       # 时间格式

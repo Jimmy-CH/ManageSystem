@@ -1,4 +1,4 @@
 from .status import CustomStatus
 from .response import custom_response
 from .base_model import BaseModel
-from .exception_handler import custom_exception_handler, handler
+from .exception_handler import custom_exception_handler

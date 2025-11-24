@@ -8,10 +8,10 @@ import os
 from celery import Celery
 
 # 设置 Django 的 settings 模块
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'manager.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 
 # 创建 Celery 实例
-app = Celery('manager')
+app = Celery('server')
 
 # 使用 Django 的 settings 模块中的配置
 # Celery 会自动查找以 'CELERY_' 开头的配置变量
