@@ -4,6 +4,8 @@ from .models import ProcessRecord, EntryLog, OAInfo, OAPerson
 from django.utils import timezone
 from django.db import transaction
 
+from .utils import mask_id_number, mask_phone_number
+
 
 class EntryLogSerializer(serializers.ModelSerializer):
     card_status_display = serializers.CharField(
@@ -53,11 +55,21 @@ class ProcessRecordSerializer(serializers.ModelSerializer):
         source='get_pledged_status_display',
         read_only=True
     )
+    id_number = serializers.SerializerMethodField(read_only=True)
+    phone_number = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProcessRecord
         fields = '__all__'
         read_only_fields = ['create_time', 'update_time']
+
+    def get_id_number(self, obj):
+        raw = obj.id_number
+        return mask_id_number(raw)
+
+    def get_phone_number(self, obj):
+        raw = obj.phone_number
+        return mask_phone_number(raw)
 
     def validate(self, data):
         registration_status = data.get('registration_status')
@@ -91,12 +103,11 @@ class OAPersonSerializer(serializers.ModelSerializer):
 
 
 class OAInfoSerializer(serializers.ModelSerializer):
-    # persons = OAPersonSerializer(many=True, read_only=False, required=False)
 
     class Meta:
         model = OAInfo
         fields = '__all__'
-        read_only_fields = ['create_time', 'connected_count']  # connected_count 由逻辑控制
+        read_only_fields = ['create_time', 'connected_count']
 
     def create(self, validated_data):
         persons_data = validated_data.pop('persons', [])
@@ -151,6 +162,7 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
     companion = serializers.CharField(max_length=128, default="无", allow_blank=True)
     remarks = serializers.CharField(required=False, allow_blank=True)
     personnel = PersonnelItemSerializer(many=True)
+    entered_time = serializers.DateTimeField(required=False)
 
     def validate_personnel(self, value):
         if not value:
@@ -177,8 +189,8 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
             'carried_items': validated_data.get('carried_items'),
             'companion': validated_data.get('companion', '无'),
             'remarks': validated_data.get('remarks'),
-            'apply_enter_time': validated_data.get('apply_enter_time') or now,
-            'apply_leave_time': validated_data.get('apply_leave_time') or (now + timezone.timedelta(hours=24)),
+            # 'apply_enter_time': validated_data.get('apply_enter_time') or now,
+            # 'apply_leave_time': validated_data.get('apply_leave_time') or (now + timezone.timedelta(hours=24)),
             'is_emergency': True,
             'is_linked': False,
             'registration_status': 2,
@@ -186,7 +198,7 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
             'create_user_name': operator_name,
             'change_user_code': operator_code,
             'change_user_name': operator_name,
-            'entered_time': now,
+            'entered_time': validated_data.get('entered_time') or now,
             'enter_count': 1,
         }
 
@@ -194,7 +206,6 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
 
         with transaction.atomic():
             for person in personnel_data:
-                # 创建并保存 ProcessRecord（立即获得 id）
                 record = ProcessRecord(
                     person_name=person['person_name'],
                     phone_number=person.get('phone_number'),
@@ -211,11 +222,10 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
                 record.save()
                 created_records.append(record)
 
-                # 立即创建 EntryLog（此时 record 有 id）
                 EntryLog.objects.create(
                     process_record=record,
-                    entered_time=now,
-                    create_time=now,
+                    entered_time=record.entered_time,
+                    create_time=record.entered_time,
                     create_user_code=operator_code,
                     create_user_name=operator_name,
                     card_status=record.card_status,
@@ -233,10 +243,20 @@ class ProcessRecordBatchRegisterSerializer(serializers.Serializer):
 class ProcessRecordDetailSerializer(serializers.ModelSerializer):
     latest_entry = serializers.SerializerMethodField()
     latest_exit = serializers.SerializerMethodField()
+    id_number = serializers.SerializerMethodField(read_only=True)
+    phone_number = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProcessRecord
-        fields = '__all__'  # 或列出你需要的字段
+        fields = '__all__'
+
+    def get_id_number(self, obj):
+        raw = obj.id_number
+        return mask_id_number(raw)
+
+    def get_phone_number(self, obj):
+        raw = obj.phone_number
+        return mask_phone_number(raw)
 
     def get_latest_entry(self, obj):
         latest = EntryLog.objects.filter(
