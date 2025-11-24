@@ -113,9 +113,7 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
-        user_info = request.user
-        operator_code = user_info.get('uuid', 'admin')
-        operator_name = user_info.get('user_name', 'admin')
+        user = request.user
 
         companion = data.get('companion', '无')
         card_status = int(data.get('card_status', 1))
@@ -128,8 +126,8 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
             process_record=record,
             entered_time=timezone.now(),
             create_time=timezone.now(),
-            create_user_code=operator_code,
-            create_user_name=operator_name,
+            create_user_code=user.username,
+            create_user_name=user.username,
             card_status=card_status,
             card_type=card_type,
             pledged_status=pledged_status,
@@ -143,8 +141,8 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record.registration_status = 2
         record.entered_time = entry_log.entered_time
         record.enter_count += 1
-        record.change_user_code = operator_code
-        record.change_user_name = operator_name
+        record.change_user_code = user.username
+        record.change_user_name = user.username
         record.save()
 
         return Response({
@@ -164,9 +162,7 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         record = get_object_or_404(ProcessRecord, pk=pk)
 
         data = request.data
-        user_info = request.user
-        operator_code = user_info.get('uuid', 'admin')
-        operator_name = user_info.get('user_name', 'admin')
+        user = request.user
 
         exit_condition = data.get('exit_condition', 'normal')
         remarks = data.get('remarks', '').strip()
@@ -218,8 +214,8 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
             process_record=record,
             exited_time=timezone.now(),
             create_time=timezone.now(),
-            create_user_code=operator_code,
-            create_user_name=operator_name,
+            create_user_code=user.username,
+            create_user_name=user.username,
             card_status=new_card_status,
             card_type=latest_entry.card_type,
             pledged_status=new_pledged_status,
@@ -235,14 +231,14 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
             record.registration_status = 3
             record.exited_time = entry_log.exited_time
             record.is_normal = False
-            record.change_user_code = operator_code
-            record.change_user_name = operator_name
+            record.change_user_code = user.username
+            record.change_user_name = user.username
             record.save()
         else:
             record.registration_status = 3
             record.exited_time = entry_log.exited_time
-            record.change_user_code = operator_code
-            record.change_user_name = operator_name
+            record.change_user_code = user.username
+            record.change_user_name = user.username
             record.save()
 
         return Response({
@@ -282,9 +278,7 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         if not oa_info_id:
             return Response({"error": "oa_info_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user_info = request.user
-        operator_code = user_info.get('uuid', 'admin')
-        operator_name = user_info.get('user_name', 'admin')
+        user = request.user
 
         try:
             oa_info = OAInfo.objects.get(id=oa_info_id)
@@ -294,8 +288,8 @@ class ProcessRecordViewSet(viewsets.ModelViewSet):
         # 使用事务确保一致性
         with transaction.atomic():
             # 更新 ProcessRecord
-            record.change_user_code = operator_code
-            record.change_user_name = operator_name
+            record.change_user_code = user.username
+            record.change_user_name = user.username
             record.oa_link = oa_info.oa_link
             record.oa_link_info = oa_info.oa_link_info
             record.is_linked = True

@@ -63,29 +63,97 @@
             {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column prop="person_name" label="姓名" width="120" />
-        <el-table-column prop="phone_number" label="电话" width="120" />
+        <el-table-column label="人员信息" width="180">
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.person_name || '—' }}</div>
+              <div style="font-size: 12px; color: #999;">{{ scope.row.phone_number || '—' }}</div>
+            </div>
+          </template>
+        </el-table-column>
+
         <el-table-column prop="person_type_display" label="人员类型" width="100" />
-        <el-table-column prop="id_type_display" label="证件类型" width="100" />
-        <el-table-column prop="id_number" label="证件号码" width="180" />
-        <el-table-column prop="unit" label="单位" width="150" />
-        <el-table-column prop="department" label="部门" width="120" />
-        <el-table-column prop="registration_status_display" label="状态" width="100" />
-        <el-table-column prop="apply_enter_time" label="申请进入时间" width="160" />
-        <el-table-column prop="apply_leave_time" label="申请离开时间" width="160" />
-        <el-table-column prop="entered_time" label="进入时间" width="160" />
-        <el-table-column prop="exited_time" label="离开时间" width="160" />
+        <el-table-column label="证件信息" width="200">
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.id_type_display || '—' }}</div>
+              <div style="font-size: 12px; color: #999; font-family: monospace;">
+                {{ scope.row.id_number || '—' }}
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="单位/部门" width="180">
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.unit || '—' }}</div>
+              <div style="font-size: 12px; color: #999;">{{ scope.row.department || '—' }}</div>
+            </div>
+          </template>
+        </el-table-column>
+        <!-- <el-table-column prop="registration_status_display" label="状态" width="100" /> -->
+        <el-table-column prop="registration_status_display" label="状态" width="100">
+          <template #default="scope">
+            <el-tag
+              :type="
+                scope.row.registration_status === 1 ? 'success' :
+                scope.row.registration_status === 2 ? 'warning' :
+                'info'
+              "
+              size="mini"
+            >
+              {{ scope.row.registration_status_display }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="申请进出时间" width="160">
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.apply_enter_time || '—' }}</div>
+              <div style="font-size: 12px; color: #999;">{{ scope.row.apply_leave_time || '—' }}</div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="实际进出时间" width="160">
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.entered_time || '—' }}</div>
+              <div style="font-size: 12px; color: #999;">{{ scope.row.exited_time || '—' }}</div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="enter_count" label="进出次数" width="120" />
         <el-table-column prop="change_user_name" label="操作人员" width="120" />
         <el-table-column prop="reason" label="出入原因" width="180" />
         <el-table-column prop="card_status_display" label="门禁卡状态" width="120" />
-        <el-table-column prop="applicant" label="OA申请人" width="120" />
-        <el-table-column prop="applicant_time" label="OA申请时间" width="160" />
+        <el-table-column prop="oa_link_info" label="OA链接" width="120" />
+
+        <el-table-column label="OA申请信息" width="160">
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.applicant || '—' }}</div>
+              <div style="font-size: 12px; color: #999;">{{ scope.row.applicant_time || '—' }}</div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="300">
           <template #default="scope">
             <el-button size="mini" @click="showLogs(scope.row)">日志</el-button>
-            <el-button size="mini" type="primary" @click="openEntryModal(scope.row)">入场</el-button>
-            <el-button size="mini" type="danger" @click="openExitModal(scope.row)">离场</el-button>
-            <el-button size="small" @click="openOaModal(scope.row)">关联OA</el-button>
+            <el-button
+              v-show="
+                (scope.row.registration_status == 1 || scope.row.registration_status == 3) &&
+                  isWithinApplyTimeRange(scope.row)
+              "
+              size="mini"
+              type="primary"
+              @click="openEntryModal(scope.row)"
+            >
+              入场
+            </el-button>
+            <el-button v-show="scope.row.registration_status == 2" size="mini" type="danger" @click="openExitModal(scope.row)">离场</el-button>
+            <el-button v-show="scope.row.is_linked == false" size="small" @click="openOaModal(scope.row)">关联OA</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -178,6 +246,18 @@ export default {
     await this.loadData()
   },
   methods: {
+    isWithinApplyTimeRange(row) {
+      if (!row.apply_enter_time || !row.apply_leave_time) return false
+
+      const now = new Date() // 当前时间
+      const enterTime = new Date(row.apply_enter_time)
+      const leaveTime = new Date(row.apply_leave_time)
+
+      // 如果解析失败，返回 false
+      if (isNaN(enterTime) || isNaN(leaveTime)) return false
+
+      return now >= enterTime && now <= leaveTime
+    },
     async loadData() {
       try {
         const res = await recordApi.list({

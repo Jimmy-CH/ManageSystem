@@ -1,29 +1,27 @@
-# utils/response.py
 from django.http import JsonResponse
 
 
-def custom_response(data=None, code=200, message="成功", success=True, status=None, **kwargs):
+def custom_response(data=None, code=200, message="成功", success=True, http_status=200, **kwargs):
     """
     自定义 JSON 响应封装
-    :param data: 返回的数据（字典或列表）
-    :param code: 业务状态码（自定义）
+    :param data: 返回的数据
+    :param code: 业务状态码（自定义，如 0, 4002, 5001）
     :param message: 提示信息
-    :param success: 是否成功
-    :param status: HTTP 状态码（如 200, 400, 500），默认与 code 相同
-    :param kwargs: 其他额外字段
+    :param success: 是否成功（可选）
+    :param http_status: HTTP 状态码（必须是 100-599 的整数，默认 200）
+    :param kwargs: 其他字段
     :return: JsonResponse
     """
+    # 安全校验：确保 http_status 合法
+    if not isinstance(http_status, int) or not (100 <= http_status <= 599):
+        http_status = 200 if success else 500
+
     response_data = {
         "code": code,
         "message": message,
         "success": success,
         "data": data,
     }
-
-    # 添加其他自定义字段
     response_data.update(kwargs)
-
-    # 默认 HTTP 状态码
-    http_status = status if status is not None else code
 
     return JsonResponse(response_data, status=http_status, json_dumps_params={'ensure_ascii': False})
