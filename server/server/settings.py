@@ -140,7 +140,7 @@ INSTALLED_APPS = [
 
 # DRF
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'common.pagination.FrontendCompatiblePagination',
+    'DEFAULT_PAGINATION_CLASS': 'common.StandardResultsSetPagination',
     'DEFAULT_RENDERER_CLASSES': [
         'common.renderers.StandardJSONRenderer',
         'rest_framework.renderers.JSONRenderer',          # 保留原生备用
