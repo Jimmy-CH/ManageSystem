@@ -136,6 +136,7 @@ INSTALLED_APPS = [
     'apps.xc',
     'apps.idc',
     'apps.cmdb',
+    'apps.faults',
 ]
 
 # DRF
