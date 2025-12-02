@@ -11,7 +11,7 @@ from celery import Celery
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 
 # 创建 Celery 实例
-app = Celery('server')
+app = Celery('Madmin')
 
 # 使用 Django 的 settings 模块中的配置
 # Celery 会自动查找以 'CELERY_' 开头的配置变量
