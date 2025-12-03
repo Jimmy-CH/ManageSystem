@@ -25,7 +25,7 @@ class Org(models.Model):
     org_name = models.CharField(max_length=128, null=True, verbose_name='机构名称')
     unit_name = models.CharField(max_length=128, null=True, verbose_name='公司名称')
     unit_code = models.CharField(max_length=64, null=True, verbose_name='公司编码')
-    pk_org_id = models.CharField(max_length=256, unique=True, null=True, verbose_name='机构主键（全系统唯一）')
+    pk_org_id = models.CharField(max_length=255, unique=True, null=True, verbose_name='机构主键（全系统唯一）')
 
     # 父级关系：优先使用 org_code 作为外键（更稳定）
     parent = models.ForeignKey(

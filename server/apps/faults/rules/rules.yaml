@@ -1,0 +1,27 @@
+rules:
+  - id: rule_temp_comm_fail
+    condition:
+      first_level: "网络"
+      third_level: "通信中断"
+      # 假设 temperature 存在设备信息中 → 需从 EventDeviceInfo 获取（见下文）
+    action:
+      root_cause: "高温导致通信模块异常"
+      suggestion: "检查设备散热系统，必要时重启设备。"
+      confidence: 0.95
+
+  - id: rule_power_x200
+    condition:
+      device_model: "X200"
+      description__contains: "电源"
+    action:
+      root_cause: "电源模块老化"
+      suggestion: "更换电源模块（建议使用2024年后批次）。"
+      confidence: 0.90
+
+  - id: rule_alarm_e101
+    condition:
+      mal_reason__contains: "E101"
+    action:
+      root_cause: "固件版本不兼容"
+      suggestion: "升级至最新固件 v2.3+。"
+      confidence: 0.88
