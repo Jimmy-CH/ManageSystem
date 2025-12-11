@@ -340,3 +340,8 @@ DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {
     'location': DB_BACKUP_PATH,    # 自定义备份目录
 }
+#  DingTalk 配置
+DING_URL = 'https://oapi.dingtalk.com'
+DING_AGENT_ID = '3132986242'
+DING_APP_KEY = 'dingaqoppuqc92z48taf'
+DING_APP_SECRET = 'n5fzlXaEWRrUjcYFmwll25_zt25puC_NW_z1eMCT62PEnAin67mo9dDBjWDBUOLb'

@@ -92,6 +92,11 @@ class Event(CbaseModel):
                                                   null=True, blank=True)
     solution_type = models.SmallIntegerField("解决方式", choices=EVENT_SOLUTION_TYPE, default=0, null=True, blank=True)
     document_id = models.CharField("知识库id", max_length=128, null=True, blank=True)
+    # 新增以下字段
+    ai_root_cause = models.CharField("AI 初步根因", max_length=256, null=True, blank=True)
+    ai_suggestion = models.TextField("AI 处理建议", null=True, blank=True)
+    ai_confidence = models.FloatField("AI 置信度", null=True, blank=True)
+    embedding = JSONField("文本向量", null=True, blank=True)  # 用于 FAISS 构建
 
     class Meta:
         db_table = "event"
