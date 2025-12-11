@@ -2,7 +2,7 @@ import time
 import json
 import datetime
 import pandas as pd
-from collections import Counter
+from collections import Counter, defaultdict
 
 from django.db.models import Q, Count, Sum, Avg, Value, Case, When, CharField, Min, FloatField
 from django.http import JsonResponse
@@ -912,7 +912,6 @@ def maintenance_statistics_score_table_data(request):
         'maintenance_remarks',
         'is_overtime'
     )
-    from collections import defaultdict
     # 按 maintenance 分组聚合
     groups = defaultdict(list)
     for rec in records:
